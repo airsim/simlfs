@@ -5,7 +5,8 @@
 // Import section
 // //////////////////////////////////////////////////////////////////////
 // StdAir
-#include <stdair/STDAIR_Types.hpp>
+#include <stdair/stdair_basic_types.hpp>
+#include <stdair/stdair_service_types.hpp>
 // SimLFS
 #include <simlfs/SIMLFS_Types.hpp>
 

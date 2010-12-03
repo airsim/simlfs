@@ -6,8 +6,8 @@
 // //////////////////////////////////////////////////////////////////////
 // STL
 #include <string>
-// STDAIR
-#include <stdair/STDAIR_Types.hpp>
+// StdAir
+#include <stdair/stdair_service_types.hpp>
 // Simlfs
 #include <simlfs/SIMLFS_Types.hpp>
 #include <simlfs/service/ServiceAbstract.hpp>

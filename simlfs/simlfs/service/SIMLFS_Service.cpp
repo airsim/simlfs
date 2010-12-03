@@ -10,6 +10,7 @@
 #include <stdair/basic/BasFileMgr.hpp>
 #include <stdair/bom/BomManager.hpp>
 #include <stdair/service/Logger.hpp>
+#include <stdair/stdair_exceptions.hpp>
 #include <stdair/STDAIR_Service.hpp>
 // SimLFS
 #include <simlfs/basic/BasConst_SIMLFS_Service.hpp>
@@ -154,13 +155,14 @@ namespace SIMLFS {
     if (doesExistAndIsReadable == false) {
       STDAIR_LOG_ERROR ("The fare input file, '" << iFareInputFilename
                         << "', can not be retrieved on the file-system");
-      throw stdair::FileNotFoundException();
+      throw stdair::FileNotFoundException ("The fare input file, '"
+                                           + iFareInputFilename
+                                           + "', can not be retrieved on the file-system");
     }
 
     // Retrieve the Simlfs service context
     assert (_simlfsServiceContext != NULL);
-    SIMLFS_ServiceContext& lSIMLFS_ServiceContext =
-      *_simlfsServiceContext;
+    SIMLFS_ServiceContext& lSIMLFS_ServiceContext = *_simlfsServiceContext;
 
     // Retrieve the StdAir service context
     stdair::STDAIR_ServicePtr_T lSTDAIR_Service_ptr =
@@ -181,7 +183,7 @@ namespace SIMLFS {
       throw NonInitialisedServiceException();
     }
     assert (_simlfsServiceContext != NULL);
-    SIMLFS_ServiceContext& lSIMLFS_ServiceContext= *_simlfsServiceContext;
+    SIMLFS_ServiceContext& lSIMLFS_ServiceContext = *_simlfsServiceContext;
 
     try {
       

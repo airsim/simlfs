@@ -30,7 +30,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure \
 EXTRA_DIST =
 
 # Build in these directories:
-SUBDIRS = simlfs $(TEST_DIR)
+SUBDIRS = simlfs samples $(TEST_DIR)
 
 
 # Configuration helpers

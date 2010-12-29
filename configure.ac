@@ -62,15 +62,21 @@ AC_ARG_ENABLE(exceptions,
                               [enable exceptions handling mechanism])],
               [AC_DEFINE([SIMLFS_EXCEPTIONS], [1],
                          [Define if you want exceptions handling])])
-test "x$enable_exceptions" != xno && enable_exceptions=yes
-test "x$ax_cv_boost_date_time" != xno && enable_exceptions=yes
+test "x$enable_exceptions" != "xno" && enable_exceptions=yes
+test "x$ax_cv_boost_date_time" != "xno" && enable_exceptions=yes
+
+# Set the data directory for SimLFS
+pkgdatadir="${datadir}/simlfs"
+AC_SUBST(pkgdatadir)
+# Set the directory for data samples exported by SimLFS
+sampledir="${pkgdatadir}/samples"
+AC_SUBST(sampledir)
 
 # Check for info pages
 AC_ARG_ENABLE(info-doc, 
               [AS_HELP_STRING([--disable-info-doc],
                               [do not generate Info documentation])])
 test "x$enable_info_doc" != xno && enable_info_doc=yes
-
 
 # Check for html-doc switch
 AC_ARG_ENABLE(html-doc, 
@@ -255,8 +261,8 @@ AC_CONFIG_FILES(
 	simlfs/config/Makefile
 	simlfs/core/Makefile
 	simlfs/batches/Makefile
+	samples/Makefile
 	test/Makefile
-	test/samples/Makefile
 	test/simlfs/Makefile
 )
 AC_OUTPUT
@@ -271,6 +277,10 @@ Directories:
   - exec_prefix ............ : ${exec_prefix}
   - includedir ............. : ${includedir}
   - libdir ................. : ${libdir}
+  - datarootdir ............ : ${datarootdir}
+  - datadir ................ : ${datadir}
+  - pkgdatadir ............. : ${pkgdatadir}
+  - sampledir .............. : ${sampledir}
   - docdir ................. : ${docdir}
   - mandir ................. : ${mandir}
   - infodir ................ : ${infodir}

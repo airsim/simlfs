@@ -1,11 +1,12 @@
 # Process this file with autoconf to produce a configure script
 #-------------------------------------------------------------------
 AC_PREREQ(2.59)
-AC_COPYRIGHT([Copyright (C) 2007-2010 Denis Arnaud <denis_arnaud@users.sourceforge.net>])
+AC_COPYRIGHT([Copyright (C) 2007-2011 Denis Arnaud <denis_arnaud@users.sourceforge.net>])
 AC_INIT([SIMLFS],[99.99.99],[denis_arnaud@users.sourceforge.net],[simlfs])
 AC_CONFIG_HEADER([simlfs/config.h])
 AC_CONFIG_SRCDIR([simlfs/basic/BasConst.cpp])
 AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([config])
 AM_INIT_AUTOMAKE
 AM_PATH_CPPUNIT(1.10)
 AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$CPPUNIT_LIBS" != x])
@@ -173,7 +174,7 @@ AC_SUBST(SOCI_LIBS)
 # -----------------------------------------------------------------------------
 # Support for StdAir (): http://sf.net/projects/stdair
 # -----------------------------------------------------------------------------
-AM_PATH_STDAIR([0.9.0])
+AM_PATH_STDAIR([0.10.0])
 AC_SUBST(STDAIR_VERSION)
 AC_SUBST(STDAIR_CFLAGS)
 AC_SUBST(STDAIR_LIBS)

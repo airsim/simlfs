@@ -334,6 +334,10 @@ Compiler/linker flags/libs/defs:
   - LIBS ................... : ${LIBS}
 
 External libraries:
+${OPENMPI_OUTPUT}
+
+${MPICH2_OUTPUT}
+
   - Python .................. :
     o PYTHON_VERSION ........ : ${PYTHON_VERSION}
     o PYTHON_CFLAGS ......... : ${PYTHON_CFLAGS}

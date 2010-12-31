@@ -123,21 +123,20 @@ AC_SUBST(PYTHON_CFLAGS)
 AC_SUBST(PYTHON_ADD_LIBS)
 
 # -----------------------------------------------------------
-# MPICH2: http://www.mcs.anl.gov/research/projects/mpich2
-# Note: Boost.MPI depends on MPICH2, rather than on OpenMPI
-# -----------------------------------------------------------
-#AX_MPICH2
-#AC_SUBST(MPICH2_VERSION)
-#AC_SUBST(MPICH2_CFLAGS)
-#AC_SUBST(MPICH2_LIBS)
-
-# -----------------------------------------------------------
 # OpenMPI: http://www.open-mpi.org
 # -----------------------------------------------------------
-AX_OPENMPI
-AC_SUBST(OPENMPI_VERSION)
-AC_SUBST(OPENMPI_CFLAGS)
-AC_SUBST(OPENMPI_LIBS)
+#AX_OPENMPI
+#AC_SUBST(MPIGEN_VERSION)
+#AC_SUBST(MPIGEN_CFLAGS)
+#AC_SUBST(MPIGEN_LIBS)
+
+# -----------------------------------------------------------
+# MPICH2: http://www.mcs.anl.gov/research/projects/mpich2
+# -----------------------------------------------------------
+#AX_MPICH2
+#AC_SUBST(MPIGEN_VERSION)
+#AC_SUBST(MPIGEN_CFLAGS)
+#AC_SUBST(MPIGEN_LIBS)
 
 # ---------------------------------------------------------------
 # Boost (STL Extensions): http://www.boost.org
@@ -151,6 +150,8 @@ AC_SUBST(BOOST_PROGRAM_OPTIONS_LIB)
 AC_SUBST(BOOST_FILESYSTEM_LIB)
 AC_SUBST(BOOST_THREAD_LIB)
 AC_SUBST(BOOST_PYTHON_LIB)
+AC_SUBST(BOOST_SIGNALS_LIB)
+AC_SUBST(BOOST_IOSTREAMS_LIB)
 AC_SUBST(BOOST_ASIO_LIB)
 AC_SUBST(BOOST_MPI_LIB)
 AC_SUBST(BOOST_MPI_PYTHON_LIB)
@@ -268,6 +269,26 @@ AC_CONFIG_FILES(
 )
 AC_OUTPUT
 
+# OpenMPI
+if test "x$HAVE_OPENMPI" = "x1"; then
+   OPENMPI_OUTPUT="  - OPENMPI ................ :
+    o OPENMPI_VERSION ...... : ${MPIGEN_VERSION}
+    o OPENMPI_CFLAGS ....... : ${MPIGEN_CFLAGS}
+    o OPENMPI_LIBS ......... : ${MPIGEN_LIBS}"
+else
+   OPENMPI_OUTPUT="  - OPENMPI ................ : No"
+fi
+
+# MPICH2
+if test "x$HAVE_MPICH2" = "x1"; then
+   MPICH2_OUTPUT="  - MPICH2 ................. :
+    o MPICH2_VERSION ....... : ${MPIGEN_VERSION}
+    o MPICH2_CFLAGS ........ : ${MPIGEN_CFLAGS}
+    o MPICH2_LIBS .......... : ${MPIGEN_LIBS}"
+else
+   MPICH2_OUTPUT="  - MPICH2 ................. : No"
+fi
+
 echo "
 ------------------------------------------------------------------------------
 $PACKAGE-$VERSION library configuration:
@@ -353,7 +374,7 @@ External libraries:
     o EXTRACC_CFLAGS ....... : ${EXTRACC_CFLAGS}
     o EXTRACC_LIBS ......... : ${EXTRACC_LIBS}
 
-  - CPPUNIT ................ :
+  - CppUnit ................ :
     o CPPUNIT_VERSION ...... : ${CPPUNIT_VERSION}
     o CPPUNIT_CFLAGS ....... : ${CPPUNIT_CFLAGS}
     o CPPUNIT_LIBS ......... : ${CPPUNIT_LIBS}

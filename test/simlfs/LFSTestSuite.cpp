@@ -41,7 +41,7 @@ void LFSTestSuite::simpleLFSHelper() {
   // Airline code
   const stdair::AirlineCode_T lAirlineCode ("SV");
   // Number of passengers in the travelling group
-  const SIMLFS::PartySize_T lPartySize = 5;
+  const stdair::PartySize_T lPartySize = 5;
   simlfsService.priceQuote (lAirlineCode, lPartySize);
   
   // DEBUG

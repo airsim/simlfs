@@ -7,9 +7,11 @@
 #include <boost/make_shared.hpp>
 // StdAir
 #include <stdair/stdair_exceptions.hpp>
+#include <stdair/stdair_basic_types.hpp>
 #include <stdair/basic/BasChronometer.hpp>
 #include <stdair/basic/BasFileMgr.hpp>
 #include <stdair/bom/BomManager.hpp>
+#include <stdair/bom/TravelSolutionStruct.hpp>
 #include <stdair/service/Logger.hpp>
 #include <stdair/STDAIR_Service.hpp>
 // Airline Inventory
@@ -257,15 +259,15 @@ namespace SIMLFS {
       const double lFareQuoteRetrievalMeasure =
       	lFareQuoteRetrievalChronometer.elapsed(); 
       STDAIR_LOG_DEBUG ("Fare Quote retrieving: "
-                        << lFareQuoteRetrievingMeasure << " - "
-                        << lSIMFQT_ServiceContext.display());   
+                        << lFareQuoteRetrievalMeasure << " - "
+                        << lSIMLFS_ServiceContext.display());   
 
     } catch (const std::exception& error) {
       STDAIR_LOG_ERROR ("Exception: "  << error.what());
       throw QuotingException();
     }
 
-    return oPrice;
+    return oTravelSolutionList;
   }
   
   // ////////////////////////////////////////////////////////////////////

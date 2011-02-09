@@ -24,4 +24,6 @@ LFSTestSuite_CXXFLAGS = $(BOOST_CFLAGS) $(STDAIR_CFLAGS)
 LFSTestSuite_LDADD =
 LFSTestSuite_LDFLAGS =  \
 	$(BOOST_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(STDAIR_LIBS) \
+	$(top_builddir)/simfqt/core/libsimfqt.la \
+	$(top_builddir)/airinv/core/libairinv.la \
 	$(top_builddir)/simlfs/core/libsimlfs.la

@@ -4,7 +4,9 @@ include $(top_srcdir)/Makefile.common
 MAINTAINERCLEANFILES = Makefile.in
 
 ##
-SUBDIRS = simlfs
+# TODO: uncomment when the migration to Boost.UTF is completed
+#SUBDIRS = airinv avlcal simfqt simlfs
+SUBDIRS = simfqt simlfs
 
 EXTRA_DIST =
 

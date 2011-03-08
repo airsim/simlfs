@@ -4,9 +4,12 @@ include $(top_srcdir)/Makefile.common
 MAINTAINERCLEANFILES = Makefile.in
 
 ##
-# TODO: uncomment when the migration to Boost.UTF is completed
+# As every component can already be tested independently, for instance
+# by a Continuous Integration (CI) framework such as Hudson/Jenkins,
+# it is useless to retest them here. Uncomment the following line only
+# when you have cannot test those components by another way.
 #SUBDIRS = airinv avlcal simfqt simlfs
-SUBDIRS = simfqt simlfs
+SUBDIRS = simlfs
 
 EXTRA_DIST =
 

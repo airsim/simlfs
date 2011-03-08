@@ -43,62 +43,6 @@ namespace SIMFQT {
       return _classCodeList.size();
     }
 
-    /** Get the size of the list of class code list. */
-    const unsigned int getClassCodeListOfListSize () const {
-      return _classCodeListOfList.size();
-    } 
-  
-    /** Get the first airline code. */
-    const stdair::AirlineCode_T& getFirstAirlineCode () const;
-
-    /** Initialise the internal iterators on airline code:
-	The current iterator is set on the first airline code,
-	the next iterator is set on the second one. */
-    void beginAirline ();
-
-    /** States whether or not the end of the (airline code)
-        list has been reached. */
-    bool hasNotReachedEndAirline () const;
-
-    /** Get the current element (airline code). */
-    stdair::AirlineCode_T getCurrentAirlineCode () const;
-
-    /** Iterate for one element (airline code): 
-        increment both internal iterators on Buckets. */
-    void iterateAirline ();
-
-    /** Initialise the internal iterators on class code list:
-	The current iterator is set on the first class code list,
-	the next iterator is set on the second one. */
-    void beginClassCodeList ();
-
-    /** States whether or not the end of the (class code list)
-        list has been reached. */
-    bool hasNotReachedEndClassCodeList () const;
-
-    /** Get the current element (class code list). */
-    std::list<std::string> getCurrentClassCodeList () const;
-
-    /** Iterate for one element (classCodelist): 
-        increment both internal iterators on Buckets. */
-    void iterateClassCodeList ();
-
-    /** Initialise the internal iterators on class code:
-	The current iterator is set on the first class code,
-	the next iterator is set on the second one. */
-    void beginClassCode ();
-
-    /** States whether or not the end of the (class code)
-        list has been reached. */
-    bool hasNotReachedEndClassCode () const;
-
-    /** Get the current element (class code). */
-    std::string getCurrentClassCode () const;
-
-    /** Iterate for one element (classCode): 
-        increment both internal iterators on Buckets. */
-    void iterateClassCode ();
-
   public:
     // ////////////////// Attributes /////////////////
     /** Staging Date. */
@@ -112,13 +56,6 @@ namespace SIMFQT {
     stdair::minute_t _itMinutes;
     stdair::second_t _itSeconds;   
 
-    /** Iterator for the current airline code list. */
-    stdair::AirlineCodeList_T::iterator _itCurrentAirlineCode;
-    /** Iterator for the current class code list. */
-    std::list<std::list<std::string> >::iterator _itCurrentClassCodeList;
-    /** Iterator for the current class code. */
-    std::list<std::string>::iterator _itCurrentClassCode;
-    
     /** Fare ID. */
     SIMFQT::FareQuoteID_T _fareId;
 
@@ -176,14 +113,8 @@ namespace SIMFQT {
     /** Airline Code List*/
     stdair::AirlineCodeList_T _airlineCodeList;
 
-    /** Numbers of different Airline Codes*/
-    unsigned long int _nbOfAirlines;
-    
-    /** Class Code List of list*/
-    std::list<std::list<std::string> > _classCodeListOfList;
-
     /** Class Code List*/
-    std::list<std::string>  _classCodeList;
+    stdair::ClassList_StringList_T _classCodeList;
 
   };
 

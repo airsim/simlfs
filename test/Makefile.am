@@ -8,7 +8,7 @@ MAINTAINERCLEANFILES = Makefile.in
 # by a Continuous Integration (CI) framework such as Hudson/Jenkins,
 # it is useless to retest them here. Uncomment the following line only
 # when you have cannot test those components by another way.
-#SUBDIRS = airinv avlcal simfqt simlfs
+#SUBDIRS = rmol airinv avlcal simfqt simlfs
 SUBDIRS = simlfs
 
 EXTRA_DIST =

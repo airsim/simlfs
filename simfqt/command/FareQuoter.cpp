@@ -15,10 +15,36 @@
 #include <stdair/bom/key_types.hpp>
 // SimFQT
 #include <simfqt/SIMFQT_Types.hpp>
-#include <simfqt/bom/SegmentFeatures.hpp>
 #include <simfqt/command/FareQuoter.hpp>
 
-namespace SIMFQT {  
+namespace SIMFQT {
+
+  // //////////////////////////////////////////////////////////////////////  
+  template <typename ITERATOR>
+  const bool parseAirportPair(ITERATOR iFirst, 
+                              ITERATOR iLast,
+                              std::vector<std::string>& oResult) {
+
+    const bool hasParsingBeenSuccesful = 
+      boost::spirit::qi::phrase_parse(iFirst, iLast,
+	  		      
+		 // Begin grammar  
+		 (
+		 +(boost::spirit::ascii::char_ -
+                   boost::spirit::ascii::char_('-')) % '-'
+		 )
+		 ,
+		 // End grammar
+
+		 boost::spirit::ascii::space, oResult);
+
+    // Fail if we did not get a full match
+    if (iFirst != iLast) 
+      return false;
+
+    return hasParsingBeenSuccesful;
+  }
+  
 
   // //////////////////////////////////////////////////////////////////////  
   template <typename ITERATOR>
@@ -52,30 +78,40 @@ namespace SIMFQT {
               stdair::TravelSolutionStruct& ioTravelSolution,
               const stdair::BomRoot& iBomRoot) {
 
-    // Get the first segment-date key of the traval solution.
-    stdair::SegmentPath_T lSegmentPath =
-      ioTravelSolution.getSegmentPath();
-    for (stdair::KeyList_T::const_iterator itSegmentPath =
-           lSegmentPath.begin ();
-         itSegmentPath != lSegmentPath.end (); ++itSegmentPath) {
+    // Get the segment-path of the travel solution.
+    const stdair::SegmentPath_T lSegmentPath =
+      ioTravelSolution.getSegmentPath();  
+    // Get the number of segments of the travel solution.
+    const stdair::NbOfSegments_T lNbSegments = lSegmentPath.size();
+    assert (lNbSegments >= 1);
+    
+    // Get the first segment path of the travel solution.
+    const std::string lSegmentDateKeyFirst = lSegmentPath.front();
+    // Parse the first segment-date key into a vector of strings.  
+    std::vector<std::string> lResultParsingFirst;
+    const bool hasFirstParsingBeenSuccesful = 
+      parseSegmentDateKey(lSegmentDateKeyFirst.begin(), 
+                          lSegmentDateKeyFirst.end(),
+                          lResultParsingFirst);
+    assert (hasFirstParsingBeenSuccesful == true);
+    assert (lResultParsingFirst.size() == 5);
+    
+    // Get the last segment path of the travel solution.
+    const std::string lSegmentDateKeyLast = lSegmentPath.back();
+    // Parse the last segment-date key into a vector of strings.  
+    std::vector<std::string> lResultParsingLast;
+    const bool hasLastParsingBeenSuccesful = 
+      parseSegmentDateKey(lSegmentDateKeyLast.begin(), 
+                          lSegmentDateKeyLast.end(),
+                          lResultParsingLast);
+    assert (hasLastParsingBeenSuccesful == true);
+    assert (lResultParsingLast.size() == 5);
 
-      const std::string lSegmentDateKey = *itSegmentPath;
-
-      // Parse the segment-date key into a vector of strings.  
-      std::vector<std::string> lResultParsing;
-      const bool hasParsingBeenSuccesful = 
-        parseSegmentDateKey(lSegmentDateKey.begin(), 
-                            lSegmentDateKey.end(),
-                            lResultParsing);
-
-      assert (hasParsingBeenSuccesful == true);
-      assert (lResultParsing.size() == 5);
-
-      priceQuote (iBookingRequest,
-                  ioTravelSolution,
-                  iBomRoot,
-                  lResultParsing);
-    }
+    priceQuote (iBookingRequest,
+                ioTravelSolution,
+                iBomRoot,
+                lResultParsingFirst,
+                lResultParsingLast);
   }
 
   // //////////////////////////////////////////////////////////////////////
@@ -83,18 +119,42 @@ namespace SIMFQT {
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
               const stdair::BomRoot& iBomRoot,
-              const std::vector<std::string>& iResultParsing) {
+              const std::vector<std::string>& iFirstResultParsing,
+              const std::vector<std::string>& iLastResultParsing) {
     
     try {
 
+      // Get the Airport pair stream of the first segment path.
+      const std::string lFirstAirportPairStr = iFirstResultParsing.back();
+      // Parse the first segment-date key into a vector of strings.  
+      std::vector<std::string> lResultParsingOrigin;
+      const bool hasOriginParsingBeenSuccesful = 
+        parseAirportPair(lFirstAirportPairStr.begin(), 
+                         lFirstAirportPairStr.end(),
+                         lResultParsingOrigin);
+      assert (hasOriginParsingBeenSuccesful == true);
+      assert (lResultParsingOrigin.size() == 2);
+
+      // Get the Airport pair stream of the last segment path.
+      const std::string lLastAirportPairStr = iLastResultParsing.back();
+      // Parse the last segment-date key into a vector of strings.  
+      std::vector<std::string> lResultParsingDestination;
+      const bool hasDestinationParsingBeenSuccesful = 
+      parseAirportPair(lLastAirportPairStr.begin(), 
+                       lLastAirportPairStr.end(),
+                       lResultParsingDestination);
+      assert (hasDestinationParsingBeenSuccesful == true);
+      assert (lResultParsingDestination.size() == 2);
+
       // Get the Airport pair stream of the segment path.
       std::ostringstream lAirportPairStr; 
-      lAirportPairStr << iResultParsing.back() << std::endl;
+      lAirportPairStr << lResultParsingOrigin.at(0) << "-"
+                      << lResultParsingDestination.at(1) << std::endl;
 
       // Search for the fare rules having the same origin and
       // destination airport as the travel solution
-      const AirportPair* lAirportPair_ptr = stdair::BomManager::
-        getObjectPtr<AirportPair> (iBomRoot, lAirportPairStr.str());  
+      const stdair::AirportPair* lAirportPair_ptr = stdair::BomManager::
+        getObjectPtr<stdair::AirportPair> (iBomRoot, lAirportPairStr.str());  
 
       if (lAirportPair_ptr == NULL) { 
         STDAIR_LOG_ERROR ("No available fare rule for the "
@@ -108,8 +168,8 @@ namespace SIMFQT {
 
       priceQuote (iBookingRequest,
                   ioTravelSolution,
-                  *lAirportPair_ptr, 
-                  iResultParsing);
+                  *lAirportPair_ptr,
+                  iFirstResultParsing);
 
     } catch (const std::exception& lStdError) {
       STDAIR_LOG_ERROR ("Error: " << lStdError.what());
@@ -121,7 +181,7 @@ namespace SIMFQT {
   void FareQuoter::
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
-              const AirportPair& iAirportPair,
+              const stdair::AirportPair& iAirportPair,
               const std::vector<std::string>& iResultParsing) {
     
     try {
@@ -135,14 +195,14 @@ namespace SIMFQT {
         iBookingRequest.getBookingChannel();
 
       // Construct the corresponding position-channel primary key.
-      const FarePosChannelKey lFarePosChannelKey (lPosition, lChannel);
+      const stdair::PosChannelKey lFarePosChannelKey (lPosition, lChannel);
 
       // Search for the fare rules having the same position as the travel
       // solution
-      const FarePosChannel* lFarePosChannel_ptr =
+      const stdair::PosChannel* lFarePosChannel_ptr =
         stdair::BomManager::
-        getObjectPtr<FarePosChannel> (iAirportPair, 
-                                      lFarePosChannelKey.toString());
+        getObjectPtr<stdair::PosChannel> (iAirportPair, 
+                                          lFarePosChannelKey.toString());
 
       if (lFarePosChannel_ptr == NULL) {
         STDAIR_LOG_ERROR ("No available fare rule corresponding to the "
@@ -171,7 +231,7 @@ namespace SIMFQT {
   void FareQuoter::
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
-              const FarePosChannel& iFarePosChannel,
+              const stdair::PosChannel& iFarePosChannel,
               const std::vector<std::string>& iResultParsing) {
     
     try {
@@ -182,15 +242,15 @@ namespace SIMFQT {
       bool AtLeastOneAvailableDateRule = false;
 
       // Get the list of the fare rules.
-      const FareDatePeriodList_T& lFareDatePeriodList =
+      const stdair::DatePeriodList_T& lFareDatePeriodList =
         stdair::BomManager::
-        getList<FareDatePeriod>(iFarePosChannel);
+        getList<stdair::DatePeriod>(iFarePosChannel);
 
-      for (FareDatePeriodList_T::const_iterator itDateRange =
+      for (stdair::DatePeriodList_T::const_iterator itDateRange =
              lFareDatePeriodList.begin();
            itDateRange != lFareDatePeriodList.end();
            ++itDateRange) {
-        const FareDatePeriod* lcurrentFareDatePeriod_ptr =
+        const stdair::DatePeriod* lcurrentFareDatePeriod_ptr =
           *itDateRange ;
         assert (lcurrentFareDatePeriod_ptr != NULL);
 
@@ -233,8 +293,8 @@ namespace SIMFQT {
   void FareQuoter::
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
-              const FareDatePeriod& iFareDatePeriod,
-              const FarePosChannel& iFarePosChannel,
+              const stdair::DatePeriod& iFareDatePeriod,
+              const stdair::PosChannel& iFarePosChannel,
               const std::vector<std::string>& iResultParsing) {
 
     try {
@@ -245,15 +305,15 @@ namespace SIMFQT {
       bool AtLeastOneAvailableTimeRule = false;
 
       // Get the list of the fare rules.
-      const FareTimePeriodList_T& lFareTimePeriodList =
+      const stdair::TimePeriodList_T& lFareTimePeriodList =
         stdair::BomManager::
-        getList<FareTimePeriod>(iFareDatePeriod);
+        getList<stdair::TimePeriod>(iFareDatePeriod);
 
-      for (FareTimePeriodList_T::const_iterator itTimeRange =
+      for (stdair::TimePeriodList_T::const_iterator itTimeRange =
              lFareTimePeriodList.begin();
            itTimeRange != lFareTimePeriodList.end();
            ++itTimeRange) {
-        const FareTimePeriod* lcurrentFareTimePeriod_ptr =
+        const stdair::TimePeriod* lcurrentFareTimePeriod_ptr =
           *itTimeRange ;
         assert (lcurrentFareTimePeriod_ptr != NULL);
 
@@ -298,8 +358,8 @@ namespace SIMFQT {
   void FareQuoter::
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
-              const FareTimePeriod& iFareTimePeriod,
-              const FarePosChannel& iFarePosChannel,
+              const stdair::TimePeriod& iFareTimePeriod,
+              const stdair::PosChannel& iFarePosChannel,
               const std::vector<std::string>& iResultParsing) {
 
     try {
@@ -326,12 +386,6 @@ namespace SIMFQT {
       bool AtLeastOneAvailableFeaturesRule = false;
       bool IsStayDurationValid = false;
       bool IsAdvancePurchaseValid = false;
-      
-      // Declare fare parameters to determine.
-      stdair::PriceValue_T lPrice;
-      stdair::SaturdayStay_T lSaturdayStay;
-      stdair::ChangeFees_T lChangeFees;
-      stdair::NonRefundable_T lNonRefundable;
 
       // Get the list of the fare rules.
       const FareRuleFeaturesList_T& lFareRuleFeaturesList =
@@ -355,20 +409,19 @@ namespace SIMFQT {
         // Search for the fare rules having corresponding features.
         if (IsStayDurationValid && IsAdvancePurchaseValid){
           AtLeastOneAvailableFeaturesRule = true;
-          lPrice = lcurrentFareRuleFeatures_ptr->getFare();
-          lSaturdayStay = lcurrentFareRuleFeatures_ptr->getSaturdayStay();
-          lChangeFees = lcurrentFareRuleFeatures_ptr->getChangeFees();
-          lNonRefundable = lcurrentFareRuleFeatures_ptr->getRefundableOption();
+          // Set the travel fare option.
+          stdair::FareOptionStruct lFareOption;
+          lFareOption.setFare (lcurrentFareRuleFeatures_ptr->getFare());
+          lFareOption.setChangeFees (lcurrentFareRuleFeatures_ptr->getChangeFees());
+          lFareOption.setNonRefundable (lcurrentFareRuleFeatures_ptr->getRefundableOption());
+          lFareOption.setSaturdayStay (lcurrentFareRuleFeatures_ptr->getSaturdayStay());
 
           priceQuote (iBookingRequest,
                       ioTravelSolution,
                       *lcurrentFareRuleFeatures_ptr,
                       iFarePosChannel,
-                      iResultParsing,
-                      lPrice,
-                      lSaturdayStay,
-                      lChangeFees,
-                      lNonRefundable);
+                      lFareOption,
+                      iResultParsing);
         } 
 
       }
@@ -408,48 +461,84 @@ namespace SIMFQT {
   priceQuote (const stdair::BookingRequestStruct& iBookingRequest,
               stdair::TravelSolutionStruct& ioTravelSolution,
               const FareRuleFeatures& iFareRuleFeatures,
-              const FarePosChannel& iFarePosChannel,
-              const std::vector<std::string>& iResultParsing,
-              const stdair::PriceValue_T& iPrice,
-              const stdair::SaturdayStay_T& iSaturdayStay,
-              const stdair::ChangeFees_T& iChangeFees,
-              const stdair::NonRefundable_T& iNonRefundable) {
+              const stdair::PosChannel& iFarePosChannel,
+              stdair::FareOptionStruct& iFareOption,
+              const std::vector<std::string>& iResultParsing) {
     
     try {
+
+      // Get the segment-path of the travel solution.
+      const stdair::SegmentPath_T lSegmentPath =
+        ioTravelSolution.getSegmentPath();
 
       // Get the airline code of the segment path.
       const stdair::AirlineCode_T lAirlineCode (iResultParsing.at(0));
 
       // Get the list of the fare rules.
-      const SegmentFeaturesList_T& lSegmentFeaturesList =
+      const stdair::AirlineClassListList_T& lAirlineClassListList =
         stdair::BomManager::
-        getList<SegmentFeatures>(iFareRuleFeatures);
+        getList<stdair::AirlineClassList>(iFareRuleFeatures);
 
       bool AtLeastOneAvailableAirlineRule = false;
+      bool CorrectAirlineRule = false;
+      bool AtLeastOneDifferentAirline = false; 
 
-      for (SegmentFeaturesList_T::const_iterator itSegmentFeatures =
-             lSegmentFeaturesList.begin();
-           itSegmentFeatures != lSegmentFeaturesList.end();
-           ++itSegmentFeatures) {
-        const SegmentFeatures* lcurrentSegmentFeatures_ptr =
-          *itSegmentFeatures;
-        assert (lcurrentSegmentFeatures_ptr != NULL);
+      // Search for the fare rules having a corresponding airline list.
+      for (stdair::AirlineClassListList_T::const_iterator itAirlineClassList =
+             lAirlineClassListList.begin();
+           itAirlineClassList != lAirlineClassListList.end();
+           ++itAirlineClassList) {
+        const stdair::AirlineClassList* lcurrentAirlineClassList_ptr =
+          *itAirlineClassList;
+        assert (lcurrentAirlineClassList_ptr != NULL);
 
-        // Search for the fare rules having a corresponding airline.
-        if (lcurrentSegmentFeatures_ptr->getAirlineCode()
-            == lAirlineCode) {
+        CorrectAirlineRule = true;
+        AtLeastOneDifferentAirline = false;
+        
+        const stdair::ClassList_StringList_T lClassList_StringList =
+          lcurrentAirlineClassList_ptr->getAirlineCodeList();
 
+        // Compare the segment path airline list with the fare rule airline list.
+        if (lClassList_StringList.size() == lSegmentPath.size()) {
+          stdair::SegmentPath_T::const_iterator lItSegmentPath =
+            lSegmentPath.begin();
+          stdair::ClassList_StringList_T::const_iterator lItClassList_String =
+            lClassList_StringList.begin();
+          while (lItSegmentPath != lSegmentPath.end() && AtLeastOneDifferentAirline == false) {
+            // Get the current segment path of the travel solution.
+            const std::string lSegmentDateKey = *lItSegmentPath;
+            // Parse the segment-date key into a vector of strings.  
+            std::vector<std::string> lResultParsing;
+            const bool hasParsingBeenSuccesful = 
+              parseSegmentDateKey(lSegmentDateKey.begin(), 
+                          lSegmentDateKey.end(),
+                          lResultParsing);
+            assert (hasParsingBeenSuccesful == true);
+            assert (lResultParsing.size() == 5);
+            if (lResultParsing.at(0) != *lItClassList_String) {
+              AtLeastOneDifferentAirline = true;
+            }
+            lItSegmentPath++;
+            lItClassList_String++;
+          }      
+        } else {
+          CorrectAirlineRule = false;
+        }
+        if (AtLeastOneDifferentAirline == true) {
+          CorrectAirlineRule = false;
+        }
+          
+        if (CorrectAirlineRule == true) {
           AtLeastOneAvailableAirlineRule = true;
-
           // Set the travel fare option.
-          stdair::FareOptionStruct lFareOption;
-          //lFareOption.addClass (lcurrentSegmentFeatures_ptr->getClassCodeList());
-          lFareOption.setFare (iPrice);
-          lFareOption.setChangeFees (iChangeFees);
-          lFareOption.setNonRefundable (iNonRefundable);
-          lFareOption.setSaturdayStay (iSaturdayStay);
-
-          ioTravelSolution.addFareOption(lFareOption);
+          stdair::ClassList_StringList_T lClassCodeList = lcurrentAirlineClassList_ptr->getClassCodeList();
+          for (stdair::ClassList_StringList_T::const_iterator itClassCodeList =
+                 lClassCodeList.begin();
+               itClassCodeList != lClassCodeList.end();
+               ++itClassCodeList ) {
+            iFareOption.addClassList (*itClassCodeList);
+          }
+          ioTravelSolution.addFareOption(iFareOption);
           
           // DEBUG
           STDAIR_LOG_DEBUG ("Segment path: "
@@ -457,19 +546,19 @@ namespace SIMFQT {
                             << iResultParsing.at(1) << ", "
                             << iResultParsing.at(2) << ", "
                             << iResultParsing.at(3) << ", "
-                            << iResultParsing.at(4) << ", "
+                            << iResultParsing.at(4) 
                             << "\n   A corresponding fare rule is:"
-                            << "\n     Fare:       "
-                            << iPrice
                             << "\n     Class:      "
-                            //<< lcurrentSegmentFeatures_ptr->getClassCode()
+                            << lcurrentAirlineClassList_ptr->describeKey()
+                            << "     Fare:       "
+                            << iFareOption.getFare() 
                             << "\n     Conditions: "
-                            << iSaturdayStay << ", "
-                            << iChangeFees << ", "
-                            << iNonRefundable);
+                            << iFareOption.getSaturdayStay()  << ", "
+                            << iFareOption.getChangeFees() << ", "
+                            << iFareOption.getNonRefundable());
         }
       }
-       if (AtLeastOneAvailableAirlineRule == false) {
+      if (AtLeastOneAvailableAirlineRule == false) {
         STDAIR_LOG_ERROR ("No available fare rule corresponding to the "
                           "airline " << iResultParsing.at(0)
                           << ", to the stay duration "

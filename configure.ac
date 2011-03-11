@@ -274,6 +274,7 @@ AC_CONFIG_FILES(
 	simlfs/core/Makefile
 	simlfs/batches/Makefile
 	samples/Makefile
+	samples/RDS01/Makefile
 	test/Makefile
 	test/rmol/Makefile
 	test/airinv/Makefile

@@ -61,6 +61,9 @@ namespace AIRINV {
     /** Generate a leg-cabin. */
     static void createLegCabin (stdair::LegDate&, const LegCabinStruct&);
       
+    /** Generate a bucket. */
+    static void createBucket (stdair::LegCabin&, const BucketStruct&);
+
     /** Generate a segment-date. */
     static void createSegmentDate (stdair::FlightDate&, 
                                    const SegmentStruct&);
@@ -79,13 +82,6 @@ namespace AIRINV {
                                              const stdair::Inventory&,
                                              const stdair::Date_T&,
                                              const stdair::Date_T&);
-
-    /** Create the direct accesses within the invetories suck as links between
-        leg-date and segment-date, ect. */
-    static void createDirectAccesses (const stdair::BomRoot&);
-    static void createDirectAccesses (stdair::Inventory&);
-    static void createDirectAccesses (stdair::FlightDate&);
-    static void createDirectAccesses (stdair::SegmentDate&);
   };
 
 }

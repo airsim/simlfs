@@ -3,7 +3,7 @@
 // //////////////////////////////////////////////////////////////////////
 // STL
 #include <cassert>
-// BOOST
+// Boost
 #include <boost/date_time/date_iterator.hpp>
 // StdAir
 #include <stdair/stdair_types.hpp>
@@ -18,11 +18,11 @@
 #include <stdair/bom/BookingClass.hpp>
 #include <stdair/bom/LegDate.hpp>
 #include <stdair/bom/LegCabin.hpp>
+#include <stdair/bom/Bucket.hpp>
 #include <stdair/factory/FacBomManager.hpp>
 #include <stdair/service/Logger.hpp>
-// AIRINV
+// AirInv
 #include <airinv/bom/FlightPeriodStruct.hpp>
-#include <airinv/bom/BomRootHelper.hpp>
 #include <airinv/command/InventoryGenerator.hpp>
 
 namespace AIRINV {
@@ -188,16 +188,40 @@ namespace AIRINV {
   createLegCabin (stdair::LegDate& ioLegDate,
                   const LegCabinStruct& iCabin) {
     // Instantiate an leg-cabin object with the corresponding cabin code
-    stdair::LegCabinKey lKey (iCabin._cabinCode);
+    const stdair::LegCabinKey lKey (iCabin._cabinCode);
     stdair::LegCabin& lLegCabin =
       stdair::FacBom<stdair::LegCabin>::instance().create (lKey);
     stdair::FacBomManager::instance().addToListAndMap (ioLegDate, lLegCabin);
     stdair::FacBomManager::instance().linkWithParent (ioLegDate, lLegCabin);
-    
+
     // Set the Leg-Cabin attributes
     iCabin.fill (lLegCabin);
+
+    // Iterate on the bucket
+    const BucketStructList_T& lBucketList = iCabin._bucketList;
+    for (BucketStructList_T::const_iterator itBucket = lBucketList.begin();
+         itBucket != lBucketList.end(); ++itBucket) {
+      const BucketStruct& lBucket = *itBucket;
+
+      // Create the bucket of the leg-cabin
+      createBucket (lLegCabin, lBucket);
+    }
   }
     
+  // ////////////////////////////////////////////////////////////////////
+  void InventoryGenerator::createBucket (stdair::LegCabin& ioLegCabin,
+                                         const BucketStruct& iBucket) {
+    // Instantiate a bucket object with the corresponding seat index
+    const stdair::BucketKey lKey (iBucket._seatIndex);
+    stdair::Bucket& lBucket =
+      stdair::FacBom<stdair::Bucket>::instance().create (lKey);
+    stdair::FacBomManager::instance().addToListAndMap (ioLegCabin, lBucket);
+    stdair::FacBomManager::instance().linkWithParent (ioLegCabin, lBucket);
+
+    // Set the Bucket attributes
+    iBucket.fill (lBucket);
+  }
+
   // ////////////////////////////////////////////////////////////////////
   void InventoryGenerator::
   createSegmentDate (stdair::FlightDate& ioFlightDate,
@@ -310,130 +334,4 @@ namespace AIRINV {
     //   lSimilarDate = lSimilarDate - lWeek;
     // }
   }
-    
-  // ////////////////////////////////////////////////////////////////////
-  void InventoryGenerator::
-  createDirectAccesses (const stdair::BomRoot& iBomRoot) {
-    // Browse the list of inventories and create direct accesses
-    // within each inventory.
-    const stdair::InventoryList_T& lInvList =
-      stdair::BomManager::getList<stdair::Inventory> (iBomRoot);
-    for (stdair::InventoryList_T::const_iterator itInv = lInvList.begin();
-         itInv != lInvList.end(); ++itInv) {
-      stdair::Inventory* lCurrentInv_ptr = *itInv;
-      assert (lCurrentInv_ptr != NULL);
-      createDirectAccesses (*lCurrentInv_ptr);
-    }
-
-    // Fill some attributes of segment-date with the routing legs.
-    BomRootHelper::fillFromRouting (iBomRoot);
-  }
-
-  // ////////////////////////////////////////////////////////////////////
-  void InventoryGenerator::
-  createDirectAccesses (stdair::Inventory& ioInventory) {
-    // Browse the list of flight-dates and create direct accesses
-    // within each flight-date.
-    const stdair::FlightDateList_T& lFlightDateList = 
-      stdair::BomManager::getList<stdair::FlightDate> (ioInventory);
-    for (stdair::FlightDateList_T::const_iterator itFlightDate = 
-           lFlightDateList.begin();
-         itFlightDate != lFlightDateList.end(); ++itFlightDate) {
-      stdair::FlightDate* lCurrentFlightDate_ptr = *itFlightDate;
-      assert (lCurrentFlightDate_ptr != NULL);
-      createDirectAccesses (*lCurrentFlightDate_ptr);
-    }
-  }
-
-  // ////////////////////////////////////////////////////////////////////
-  void InventoryGenerator::
-  createDirectAccesses (stdair::FlightDate& ioFlightDate) {
-    // Browse the list of segment-dates and create direct accesses
-    // within each segment-date.
-    const stdair::SegmentDateList_T& lSegmentDateList = 
-      stdair::BomManager::getList<stdair::SegmentDate> (ioFlightDate);
-    for (stdair::SegmentDateList_T::const_iterator itSegmentDate = 
-           lSegmentDateList.begin();
-         itSegmentDate != lSegmentDateList.end(); ++itSegmentDate) {
-      stdair::SegmentDate* lCurrentSegmentDate_ptr = *itSegmentDate;
-      assert (lCurrentSegmentDate_ptr != NULL);
-      const stdair::AirportCode_T& lBoardingPoint =
-        lCurrentSegmentDate_ptr->getBoardingPoint();
-      stdair::AirportCode_T currentBoardingPoint = lBoardingPoint;
-      const stdair::AirportCode_T& lOffPoint =
-        lCurrentSegmentDate_ptr->getOffPoint();
-      
-      // Add a sanity check so as to ensure that the loop stops. If
-      // there are more than MAXIMAL_NUMBER_OF_LEGS legs, there is
-      // an issue somewhere in the code (not in the parser, as the
-      // segments are derived from the legs thanks to the
-      // FlightPeriodStruct::buildSegments() method).
-      unsigned short i = 1;
-      while (currentBoardingPoint != lOffPoint
-             && i <= stdair::MAXIMAL_NUMBER_OF_LEGS_IN_FLIGHT) {
-        // Retrieve the (unique) LegDate getting that Boarding Point
-        stdair::LegDate& lLegDate = stdair::BomManager::
-          getObject<stdair::LegDate> (ioFlightDate, currentBoardingPoint);
-        // Link the SegmentDate and LegDate together
-        stdair::FacBomManager::
-          instance().addToListAndMap (*lCurrentSegmentDate_ptr, lLegDate);
-        stdair::FacBomManager::
-          instance().addToListAndMap (lLegDate, *lCurrentSegmentDate_ptr);
-        // Prepare the next iteration
-        currentBoardingPoint = lLegDate.getOffPoint();
-        ++i;
-      }
-      assert (i <= stdair::MAXIMAL_NUMBER_OF_LEGS_IN_FLIGHT);
-          
-      // Create the routing for the leg- and segment-cabins.
-      // At the same time, set the SegmentDate attributes derived from
-      // its routing legs (e.g., boarding and off dates).
-      createDirectAccesses (*lCurrentSegmentDate_ptr);
-    }
-  }
-
-  // ////////////////////////////////////////////////////////////////////
-  void InventoryGenerator::
-  createDirectAccesses (stdair::SegmentDate& ioSegmentDate) {
-    // Browse the list of segment-cabins and create direct accesses
-    // within each segment-cabin.
-    const stdair::SegmentCabinList_T& lSegmentCabinList = 
-      stdair::BomManager::getList<stdair::SegmentCabin> (ioSegmentDate);
-    for (stdair::SegmentCabinList_T::const_iterator itSegmentCabin = 
-           lSegmentCabinList.begin();
-         itSegmentCabin != lSegmentCabinList.end(); ++itSegmentCabin) {
-      stdair::SegmentCabin* lCurrentSegmentCabin_ptr = *itSegmentCabin;
-      assert (lCurrentSegmentCabin_ptr != NULL);
-        const stdair::CabinCode_T& lCabinCode =
-          lCurrentSegmentCabin_ptr->getCabinCode();
-      stdair::MapKey_T lSegmentCabinFullKey =
-        ioSegmentDate.describeKey() + ", " + lCabinCode;
-      
-      // Iterate on the routing legs
-      const stdair::LegDateList_T& lLegDateList =
-        stdair::BomManager::getList<stdair::LegDate> (ioSegmentDate);
-      for (stdair::LegDateList_T::const_iterator itLegDate =
-             lLegDateList.begin();
-           itLegDate != lLegDateList.end(); ++itLegDate) {
-        const stdair::LegDate* lCurrentLegDate_ptr = *itLegDate;        
-        assert (lCurrentLegDate_ptr != NULL);
-
-        // Retrieve the LegCabin getting the same class of service
-        // (cabin code) as the SegmentCabin.
-        stdair::LegCabin& lLegCabin = stdair::BomManager::
-          getObject<stdair::LegCabin> (*lCurrentLegDate_ptr, lCabinCode);
-        stdair::MapKey_T lLegCabinFullKey =
-          lCurrentLegDate_ptr->describeKey() + ", " + lCabinCode;
-
-        // Link the SegmentCabin and LegCabin together
-        stdair::FacBomManager::
-          instance().addToListAndMap (*lCurrentSegmentCabin_ptr,
-                                      lLegCabin, lLegCabinFullKey);
-        stdair::FacBomManager::
-          instance().addToListAndMap (lLegCabin, *lCurrentSegmentCabin_ptr,
-                                      lSegmentCabinFullKey);
-      }      
-    }
-  }
-
 }

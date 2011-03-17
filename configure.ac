@@ -227,6 +227,15 @@ AC_CONFIG_FILES(
 	simlfs-config
 	simlfs.pc
 	simlfs.m4
+	airrac/Makefile
+	airrac/basic/Makefile
+	airrac/bom/Makefile
+	airrac/factory/Makefile
+	airrac/command/Makefile
+	airrac/service/Makefile
+	airrac/config/Makefile
+	airrac/core/Makefile
+	airrac/batches/Makefile
 	rmol/Makefile
 	rmol/basic/Makefile
 	rmol/bom/Makefile
@@ -276,6 +285,7 @@ AC_CONFIG_FILES(
 	samples/Makefile
 	samples/RDS01/Makefile
 	test/Makefile
+	test/airrac/Makefile
 	test/rmol/Makefile
 	test/airinv/Makefile
 	test/avlcal/Makefile

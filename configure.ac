@@ -291,6 +291,8 @@ AC_CONFIG_FILES(
 	simfqt/config/Makefile
 	simfqt/core/Makefile
 	simfqt/batches/Makefile
+	simfqt/ui/Makefile
+	simfqt/ui/cmdline/Makefile
 	simlfs/Makefile
 	simlfs/basic/Makefile
 	simlfs/bom/Makefile

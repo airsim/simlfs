@@ -1,6 +1,6 @@
 ##
-# AirRAC module
-module_set_name (airrac)
+# SimFQT module
+module_set_name (simfqt)
 
 ##
 # Building and installation of the "standard library".
@@ -24,6 +24,7 @@ module_library_add_standard (".;basic;bom;factory;command;service")
 #    is given as parameter, the executable is given the name of the current
 #    module.
 module_binary_add (batches)
+module_binary_add (ui/cmdline fareQuote)
 
 ##
 # Install the CMake import helper, so that third party projects can refer to it

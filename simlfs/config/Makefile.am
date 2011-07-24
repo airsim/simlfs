@@ -1,9 +1,9 @@
-# simlfs/config sub-directory of the SimLFS project
+# simcrs/config sub-directory of the SimCRS project
 include $(top_srcdir)/Makefile.common
 
 ## Source directory
-DISTCLEANFILES = simlfs-paths.hpp
+DISTCLEANFILES = simcrs-paths.hpp
 
 MAINTAINERCLEANFILES = Makefile.in Makefile
 
-EXTRA_DIST = simlfs-paths.hpp
+EXTRA_DIST = simcrs-paths.hpp

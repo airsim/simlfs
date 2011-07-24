@@ -73,9 +73,6 @@ test "x$ax_cv_boost_date_time" != "xno" && enable_exceptions=yes
 # Set the data directory for SimLFS
 pkgdatadir="${datadir}/simlfs"
 AC_SUBST(pkgdatadir)
-# Set the directory for data samples exported by SimLFS
-sampledir="${pkgdatadir}/samples"
-AC_SUBST(sampledir)
 
 # Check for info pages
 AC_ARG_ENABLE(info-doc, 
@@ -252,6 +249,7 @@ AC_CONFIG_FILES(
 	airrac/command/Makefile
 	airrac/service/Makefile
 	airrac/config/Makefile
+	airrac/config/airrac-paths.hpp
 	airrac/core/Makefile
 	airrac/batches/Makefile
 	rmol/Makefile
@@ -262,6 +260,7 @@ AC_CONFIG_FILES(
 	rmol/service/Makefile
 	rmol/core/Makefile
 	rmol/config/Makefile
+	rmol/config/rmol-paths.hpp
 	rmol/batches/Makefile
 	airinv/Makefile
 	airinv/basic/Makefile
@@ -270,6 +269,7 @@ AC_CONFIG_FILES(
 	airinv/command/Makefile
 	airinv/service/Makefile
 	airinv/config/Makefile
+	airinv/config/airinv-paths.hpp
 	airinv/core/Makefile
 	airinv/batches/Makefile
 	airinv/server/Makefile
@@ -291,6 +291,7 @@ AC_CONFIG_FILES(
 	simfqt/command/Makefile
 	simfqt/service/Makefile
 	simfqt/config/Makefile
+	simfqt/config/simfqt-paths.hpp
 	simfqt/core/Makefile
 	simfqt/batches/Makefile
 	simfqt/ui/Makefile
@@ -302,10 +303,9 @@ AC_CONFIG_FILES(
 	simlfs/command/Makefile
 	simlfs/service/Makefile
 	simlfs/config/Makefile
+	simlfs/config/simlfs-paths.hpp
 	simlfs/core/Makefile
 	simlfs/batches/Makefile
-	samples/Makefile
-	samples/RDS01/Makefile
 	test/Makefile
 	test/airrac/Makefile
 	test/rmol/Makefile

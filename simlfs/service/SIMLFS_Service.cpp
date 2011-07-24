@@ -16,7 +16,7 @@
 #include <stdair/STDAIR_Service.hpp>
 // Airline Inventory
 #include <airinv/AIRINV_Master_Service.hpp>
-// Yield Quote
+//Fare Quote
 #include <simfqt/SIMFQT_Service.hpp>
 // SimLFS
 #include <simlfs/basic/BasConst_SIMLFS_Service.hpp>

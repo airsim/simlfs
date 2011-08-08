@@ -8,6 +8,7 @@ include (config/project_config_embeddable.cmake)
 ##
 # Project info
 set_project_names (simlfs SimLFS)
+set_project_brief ("C++ Simulated Low Fare Search (LFS) library")
 set_project_versions (99 99 99)
 
 ##
@@ -22,7 +23,6 @@ set_project_options (on)
 #####################################
 #
 packaging_init (${PROJECT_NAME})
-packaging_set_description ("C++ Simulated Low Fare Search (LFS) library")
 packaging_set_summary (
 "${PROJECT_NAME} aims at providing a clean API and a simple implementation
 (C++ library) of an Airline-related Low Fare Search (LFS) system. That

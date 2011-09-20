@@ -70,6 +70,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
     
   // Fare input file name
   const stdair::Filename_T lFareInputFilename (STDAIR_SAMPLE_DIR "/rds01/fare.csv");
+  SIMFQT::FareFilePath lFareFilePath (lFareInputFilename);
     
   // Yield input file name
   const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR "/rds01/yield.csv");
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   // Initialise the list of classes/buckets
   const stdair::BasLogParams lLogParams (stdair::LOG::DEBUG, logOutputFile);
   SIMLFS::SIMLFS_Service simlfsService (lLogParams, lScheduleInputFilename,
-                                        lOnDInputFilename, lFareInputFilename,
+                                        lOnDInputFilename, lFareFilePath,
                                         lYieldInputFilename);
   
   // Create an empty booking request structure

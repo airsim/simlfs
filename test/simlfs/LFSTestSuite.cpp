@@ -74,6 +74,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
     
   // Yield input file name
   const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR "/rds01/yield.csv");
+  const AIRRAC::YieldFilePath lYieldFilePath (lYieldInputFilename);
     
   // Check that the file path given as input corresponds to an actual file
   bool doesExistAndIsReadable =
@@ -116,7 +117,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   const stdair::BasLogParams lLogParams (stdair::LOG::DEBUG, logOutputFile);
   SIMLFS::SIMLFS_Service simlfsService (lLogParams, lScheduleInputFilename,
                                         lOnDInputFilename, lFareFilePath,
-                                        lYieldInputFilename);
+                                        lYieldFilePath);
   
   // Create an empty booking request structure
   // TODO: fill the booking request structure from the input parameters

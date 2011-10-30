@@ -1,12 +1,12 @@
 
 Summary:
 --------
-SimFQT aims at providing a clean API and a simple implementation
+SimLFS aims at providing a clean API and a simple implementation
 (C++ library) of an airline-related Low Fare Search (LFS) system. That
 library uses the Standard Airline IT C++ object model
 (http://sf.net/projects/stdair).
 
-SimFQT makes an extensive use of existing open-source libraries for
+SimLFS makes an extensive use of existing open-source libraries for
 increased functionality, speed and accuracy. In particular the
 Boost (C++ Standard Extensions: http://www.boost.org) library is used.
 

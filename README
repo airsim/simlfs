@@ -46,7 +46,7 @@ but names may vary according to distributions):
 Building the library and test binary from the tarball:
 ------------------------------------------------------
 The latest stable source tarball (simlfs*.tar.gz or .bz2) can be found here:
-http://sourceforge.net/project/showfiles.php?group_id=261633
+http://sourceforge.net/project/showfiles.php?group_id=365521
 
 Then, as usual:
 * To configure the project, type something like:

@@ -44,7 +44,7 @@ packaging_set_other_options (TBZ2 "TBZ2;TGZ")
 ########################################
 #
 get_external_libs (git "boost 1.41" readline mysql "soci 3.0"
-  "stdair 0.35" doxygen)
+  "stdair 0.35" "airrac 0.2" "rmol 0.25" "airinv 0.1" "simfqt 0.1" doxygen)
 
 
 ##############################################
@@ -56,7 +56,7 @@ init_build ()
 
 ##
 # Sub-modules
-add_modules (airrac rmol airinv avlcal simfqt ${PROJECT_NAME})
+add_modules (avlcal ${PROJECT_NAME})
 
 ##
 # For other projects to use SimLFS, install a few helpers for standard

@@ -56,7 +56,7 @@ init_build ()
 
 ##
 # Sub-modules
-add_modules (avlcal ${PROJECT_NAME})
+add_modules (${PROJECT_NAME})
 
 ##
 # For other projects to use SimLFS, install a few helpers for standard

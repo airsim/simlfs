@@ -2,7 +2,7 @@
 %global mydocs __tmp_docdir
 #
 Name:           simlfs
-Version:        99.99.99
+Version:        0.1.0
 Release:        1%{?dist}
 
 Summary:        C++ Simulated Low Fare Search (LFS) library
@@ -112,5 +112,6 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Fri Jan 21 2011 Denis Arnaud <denis.arnaud_fedora@m4x.org> 99.99.99-1
+* Sat Jan 12 2012 Denis Arnaud <denis.arnaud_fedora@m4x.org> 0.1.0-1
 - First RPM release
+

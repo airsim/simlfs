@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
 
   // Schedule input filename
   const stdair::Filename_T lScheduleInputFilename (STDAIR_SAMPLE_DIR
-                                                   "/rds01/schedule.csv");
+                                                   "/schedule01.csv");
     
   // O&D input filename
   const stdair::Filename_T lOnDInputFilename (STDAIR_SAMPLE_DIR "/ond01.csv");
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   SIMFQT::FareFilePath lFareFilePath (lFareInputFilename);
     
   // Yield input file name
-  const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR "/rds01/yield.csv");
+  const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR "/yieldstore01.csv");
   const AIRRAC::YieldFilePath lYieldFilePath (lYieldInputFilename);
     
   // Check that the file path given as input corresponds to an actual file

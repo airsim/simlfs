@@ -137,6 +137,8 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   const stdair::Duration_T lPreferredDepartureTime (boost::posix_time::hours(10));
   const stdair::WTP_T lWTP (1000.0);
   const stdair::PriceValue_T lValueOfTime (100.0);
+  const stdair::ChangeFees_T lChangeFees (true);
+  const stdair::NonRefundable_T lNonRefundable (true);
   const stdair::BookingRequestStruct lBookingRequest (lOrigin, lDestination,
                                                       lPOS,
                                                       lPreferredDepartureDate,
@@ -146,7 +148,9 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
                                                       lTripType, lStayDuration,
                                                       lFrequentFlyerType,
                                                       lPreferredDepartureTime,
-                                                      lWTP, lValueOfTime);
+                                                      lWTP, lValueOfTime,
+                                                      lChangeFees,
+                                                      lNonRefundable);
 
   // TODO: build a hand-made segment-path (as AirSched service is not
   //       available from here

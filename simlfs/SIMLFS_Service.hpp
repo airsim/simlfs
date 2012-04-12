@@ -6,6 +6,7 @@
 // //////////////////////////////////////////////////////////////////////
 // StdAir
 #include <stdair/stdair_basic_types.hpp>
+#include <stdair/stdair_file.hpp>
 #include <stdair/stdair_service_types.hpp>
 #include <stdair/bom/TravelSolutionTypes.hpp>
 // SimFQT
@@ -49,16 +50,14 @@ namespace SIMLFS {
      *     
      * @param const stdair::BasLogParams& Parameters for the output log stream.
      * @param const stdair::BasDBParams& Parameters for the database access.
-     * @param const stdair::Filename_T& Filename of the input schedule file.
-     * @param const stdair::Filename_T& Filename of the input O&D file.
+     * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
+     * @param const stdair::ODFilePath& Filename of the input O&D file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (const stdair::BasLogParams&, const stdair::BasDBParams&,
-                    const stdair::Filename_T& iScheduleInputFilename,
-                    const stdair::Filename_T& iODInputFilename,
-                    const SIMFQT::FareFilePath& iFareInputFilepath,
-                    const AIRRAC::YieldFilePath& iYieldInputFilepath);
+                    const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
      * Constructor.
@@ -71,16 +70,14 @@ namespace SIMLFS {
      *
      * @param const stdair::BasLogParams& Parameters for the output log stream.
      * @param const stdair::Date_T& Date for the beginning of analysis.
-     * @param const stdair::Filename_T& Filename of the input schedule file.
-     * @param const stdair::Filename_T& Filename of the input O&D file.
+     * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
+     * @param const stdair::ODFilePath& Filename of the input O&D file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (const stdair::BasLogParams&,
-                    const stdair::Filename_T& iScheduleInputFilename,
-                    const stdair::Filename_T& iODInputFilename,
-                    const SIMFQT::FareFilePath& iFareInputFilepath,
-                    const AIRRAC::YieldFilePath& iYieldInputFilepath);
+                    const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
      * Constructor.
@@ -96,16 +93,14 @@ namespace SIMLFS {
      * service such as SIMCRS_Service).
      *
      * @param const stdair::Date_T& Date for the beginning of analysis.
-     * @param const stdair::Filename_T& Filename of the input schedule file.
-     * @param const stdair::Filename_T& Filename of the input O&D file.
+     * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
+     * @param const stdair::ODFilePath& Filename of the input O&D file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (stdair::STDAIR_ServicePtr_T,
-                    const stdair::Filename_T& iScheduleInputFilename,
-                    const stdair::Filename_T& iODInputFilename,
-                    const SIMFQT::FareFilePath& iFareInputFilepath,
-                    const AIRRAC::YieldFilePath& iYieldInputFilepath);
+                    const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /** Destructor. */
     ~SIMLFS_Service();
@@ -176,34 +171,32 @@ namespace SIMLFS {
      * The CSV file, describing the airline fares for the simulator,
      * is parsed and the inventories are generated accordingly.
      *
-     * @param const stdair::Filename_T& Filename of the input schedule file.
-     * @param const stdair::Filename_T& Filename of the input O&D file.
+     * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
+     * @param const stdair::ODFilePath& Filename of the input O&D file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
-    void init (const stdair::Filename_T& iScheduleInputFilename,
-               const stdair::Filename_T& iODInputFilename,
-               const SIMFQT::FareFilePath& iFareInputFilepath,
-               const AIRRAC::YieldFilePath& iYieldInputFilepath);
+    void init (const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+               const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
      * Initialise the SIMFQT service with the given schedule file.
      *
-     * @param const stdair::Filename_T& Filename of the input schedule file.
+     * @param const SIMFQT::FareFilePath& Filename of the input schedule file.
      */
-    void initSIMFQTService (const SIMFQT::FareFilePath& iFareInputFilepath);
+    void initSIMFQTService (const SIMFQT::FareFilePath&);
 
     /**
      * Initialise the AIRINV Master service with the given schedule file.
      *
-     * @param const stdair::Filename_T& Filename of the input schedule file.
-     * @param const stdair::Filename_T& Filename of the input O&D file.
+     * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
+     * @param const stdair::ODFilePath& Filename of the input O&D file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     void
-    initAIRINV_Master_Service (const stdair::Filename_T& iScheduleInputFilename,
-                               const stdair::Filename_T& iODInputFilename,
-                               const AIRRAC::YieldFilePath& iYieldInputFilepath);
+    initAIRINV_Master_Service (const stdair::ScheduleFilePath&,
+                               const stdair::ODFilePath&,
+                               const AIRRAC::YieldFilePath&);
 
     /**
      * Finalise.

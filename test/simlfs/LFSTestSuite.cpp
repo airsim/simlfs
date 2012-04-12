@@ -64,16 +64,20 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   // Schedule input filename
   const stdair::Filename_T lScheduleInputFilename (STDAIR_SAMPLE_DIR
                                                    "/schedule01.csv");
-    
+  const stdair::ScheduleFilePath lScheduleFilePath (lScheduleInputFilename);
+  
   // O&D input filename
   const stdair::Filename_T lOnDInputFilename (STDAIR_SAMPLE_DIR "/ond01.csv");
+  const stdair::ODFilePath lODFilePath (lOnDInputFilename);
     
   // Fare input file name
-  const stdair::Filename_T lFareInputFilename (STDAIR_SAMPLE_DIR "/rds01/fare.csv");
-  SIMFQT::FareFilePath lFareFilePath (lFareInputFilename);
+  const stdair::Filename_T lFareInputFilename (STDAIR_SAMPLE_DIR
+                                               "/rds01/fare.csv");
+  const SIMFQT::FareFilePath lFareFilePath (lFareInputFilename);
     
   // Yield input file name
-  const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR "/yieldstore01.csv");
+  const stdair::Filename_T lYieldInputFilename (STDAIR_SAMPLE_DIR
+                                                "/yieldstore01.csv");
   const AIRRAC::YieldFilePath lYieldFilePath (lYieldInputFilename);
     
   // Check that the file path given as input corresponds to an actual file
@@ -115,8 +119,8 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   
   // Initialise the list of classes/buckets
   const stdair::BasLogParams lLogParams (stdair::LOG::DEBUG, logOutputFile);
-  SIMLFS::SIMLFS_Service simlfsService (lLogParams, lScheduleInputFilename,
-                                        lOnDInputFilename, lFareFilePath,
+  SIMLFS::SIMLFS_Service simlfsService (lLogParams, lScheduleFilePath,
+                                        lODFilePath, lFareFilePath,
                                         lYieldFilePath);
   
   // Create an empty booking request structure

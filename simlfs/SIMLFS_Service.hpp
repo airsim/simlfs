@@ -52,11 +52,15 @@ namespace SIMLFS {
      * @param const stdair::BasDBParams& Parameters for the database access.
      * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
      * @param const stdair::ODFilePath& Filename of the input O&D file.
+     * @param const stdair::FRAT5FilePath& Filename of the input FRAT5 file.
+     * @param const stdair::FFDisutilityFilePath& Filename of the input FF disutility file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (const stdair::BasLogParams&, const stdair::BasDBParams&,
                     const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const stdair::FRAT5FilePath&,
+                    const stdair::FFDisutilityFilePath&,
                     const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
@@ -72,11 +76,15 @@ namespace SIMLFS {
      * @param const stdair::Date_T& Date for the beginning of analysis.
      * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
      * @param const stdair::ODFilePath& Filename of the input O&D file.
+     * @param const stdair::FRAT5FilePath& Filename of the input FRAT5 file.
+     * @param const stdair::FFDisutilityFilePath& Filename of the input FF disutility file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (const stdair::BasLogParams&,
                     const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const stdair::FRAT5FilePath&,
+                    const stdair::FFDisutilityFilePath&,
                     const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
@@ -95,11 +103,15 @@ namespace SIMLFS {
      * @param const stdair::Date_T& Date for the beginning of analysis.
      * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
      * @param const stdair::ODFilePath& Filename of the input O&D file.
+     * @param const stdair::FRAT5FilePath& Filename of the input FRAT5 file.
+     * @param const stdair::FFDisutilityFilePath& Filename of the input FF disutility file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     SIMLFS_Service (stdair::STDAIR_ServicePtr_T,
                     const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+                    const stdair::FRAT5FilePath&,
+                    const stdair::FFDisutilityFilePath&,
                     const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /** Destructor. */
@@ -173,10 +185,13 @@ namespace SIMLFS {
      *
      * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
      * @param const stdair::ODFilePath& Filename of the input O&D file.
+     * @param const stdair::FRAT5FilePath& Filename of the input FRAT5 file.
+     * @param const stdair::FFDisutilityFilePath& Filename of the input FF disutility file.
      * @param const SIMFQT::FareFilePath& Filename of the input fare file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     void init (const stdair::ScheduleFilePath&, const stdair::ODFilePath&,
+               const stdair::FRAT5FilePath&,const stdair::FFDisutilityFilePath&,
                const SIMFQT::FareFilePath&, const AIRRAC::YieldFilePath&);
 
     /**
@@ -191,11 +206,15 @@ namespace SIMLFS {
      *
      * @param const stdair::ScheduleFilePath& Filename of the input schedule file.
      * @param const stdair::ODFilePath& Filename of the input O&D file.
+     * @param const stdair::FRAT5FilePath& Filename of the input FRAT5 file.
+     * @param const stdair::FFDisutilityFilePath& Filename of the input FF disutility file.
      * @param const AIRRAC::YieldFilePath& Filename of the input yield file.
      */
     void
     initAIRINV_Master_Service (const stdair::ScheduleFilePath&,
                                const stdair::ODFilePath&,
+                               const stdair::FRAT5FilePath&,
+                               const stdair::FFDisutilityFilePath&,
                                const AIRRAC::YieldFilePath&);
 
     /**

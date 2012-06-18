@@ -69,6 +69,16 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   // O&D input filename
   const stdair::Filename_T lOnDInputFilename (STDAIR_SAMPLE_DIR "/ond01.csv");
   const stdair::ODFilePath lODFilePath (lOnDInputFilename);
+
+  // FRAT5 curve input file name
+  const stdair::Filename_T lFRAT5InputFilename (STDAIR_SAMPLE_DIR
+                                               "/frat5.csv");
+  stdair::FRAT5FilePath lFRAT5FilePath (lFRAT5InputFilename);
+
+  // Fare family disutility curve input file name
+  const stdair::Filename_T lFFDisutilityInputFilename (STDAIR_SAMPLE_DIR
+                                                       "/ffDisutility.csv");
+  stdair::FFDisutilityFilePath lFFDisutilityFilePath (lFFDisutilityInputFilename);
     
   // Fare input file name
   const stdair::Filename_T lFareInputFilename (STDAIR_SAMPLE_DIR
@@ -92,6 +102,20 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
     stdair::BasFileMgr::doesExistAndIsReadable (lOnDInputFilename);
   BOOST_CHECK_MESSAGE (doesExistAndIsReadable == true,
                        "The '" << lOnDInputFilename
+                       << "' input file can not be open and read");
+  
+  // Check that the file path given as input corresponds to an actual file
+  doesExistAndIsReadable =
+    stdair::BasFileMgr::doesExistAndIsReadable (lFRAT5InputFilename);
+  BOOST_CHECK_MESSAGE (doesExistAndIsReadable == true,
+                       "The '" << lFRAT5InputFilename
+                       << "' input file can not be open and read");
+  
+  // Check that the file path given as input corresponds to an actual file
+  doesExistAndIsReadable =
+    stdair::BasFileMgr::doesExistAndIsReadable (lFFDisutilityInputFilename);
+  BOOST_CHECK_MESSAGE (doesExistAndIsReadable == true,
+                       "The '" << lFFDisutilityInputFilename
                        << "' input file can not be open and read");
 
   // Check that the file path given as input corresponds to an actual file
@@ -120,7 +144,8 @@ BOOST_AUTO_TEST_CASE (simlfs_simple_pricing_test) {
   // Initialise the list of classes/buckets
   const stdair::BasLogParams lLogParams (stdair::LOG::DEBUG, logOutputFile);
   SIMLFS::SIMLFS_Service simlfsService (lLogParams, lScheduleFilePath,
-                                        lODFilePath, lFareFilePath,
+                                        lODFilePath, lFRAT5FilePath,
+                                        lFFDisutilityFilePath, lFareFilePath,
                                         lYieldFilePath);
   
   // Create an empty booking request structure

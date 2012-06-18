@@ -40,8 +40,10 @@ namespace SIMLFS {
   // ////////////////////////////////////////////////////////////////////
   SIMLFS_Service::
   SIMLFS_Service (stdair::STDAIR_ServicePtr_T ioSTDAIR_ServicePtr,
-                  const stdair::ScheduleFilePath& iScheduleInputFilename,
-                  const stdair::ODFilePath& iODInputFilename,
+                  const stdair::ScheduleFilePath& iScheduleInputFilepath,
+                  const stdair::ODFilePath& iODInputFilepath,
+                  const stdair::FRAT5FilePath& iFRAT5InputFilepath,
+                const stdair::FFDisutilityFilePath& iFFDisutilityInputFilepath,
                   const SIMFQT::FareFilePath& iFareInputFilepath,
                   const AIRRAC::YieldFilePath& iYieldInputFilepath)
     : _simlfsServiceContext (NULL) {
@@ -57,7 +59,8 @@ namespace SIMLFS {
     lSIMLFS_ServiceContext.setSTDAIR_Service (ioSTDAIR_ServicePtr);
     
     // Initialise the context
-    init (iScheduleInputFilename, iODInputFilename, iFareInputFilepath,
+    init (iScheduleInputFilepath, iODInputFilepath, iFRAT5InputFilepath,
+          iFFDisutilityInputFilepath, iFareInputFilepath,
           iYieldInputFilepath);
   }
 
@@ -65,8 +68,10 @@ namespace SIMLFS {
   SIMLFS_Service::
   SIMLFS_Service (const stdair::BasLogParams& iLogParams,
                   const stdair::BasDBParams& iDBParams,
-                  const stdair::ScheduleFilePath& iScheduleInputFilename,
-                  const stdair::ODFilePath& iODInputFilename,
+                  const stdair::ScheduleFilePath& iScheduleInputFilepath,
+                  const stdair::ODFilePath& iODInputFilepath,
+                  const stdair::FRAT5FilePath& iFRAT5InputFilepath,
+                const stdair::FFDisutilityFilePath& iFFDisutilityInputFilepath,
                   const SIMFQT::FareFilePath& iFareInputFilepath,
                   const AIRRAC::YieldFilePath& iYieldInputFilepath) 
     : _simlfsServiceContext (NULL) {
@@ -78,15 +83,18 @@ namespace SIMLFS {
     initStdAirService (iLogParams, iDBParams);
     
     // Initialise the (remaining of the) context
-    init (iScheduleInputFilename, iODInputFilename, iFareInputFilepath,
+    init (iScheduleInputFilepath, iODInputFilepath, iFRAT5InputFilepath,
+          iFFDisutilityInputFilepath, iFareInputFilepath,
           iYieldInputFilepath);
   }
 
   // ////////////////////////////////////////////////////////////////////
   SIMLFS_Service::
   SIMLFS_Service (const stdair::BasLogParams& iLogParams,
-                  const stdair::ScheduleFilePath& iScheduleInputFilename,
-                  const stdair::ODFilePath& iODInputFilename,
+                  const stdair::ScheduleFilePath& iScheduleInputFilepath,
+                  const stdair::ODFilePath& iODInputFilepath,
+                  const stdair::FRAT5FilePath& iFRAT5InputFilepath,
+                const stdair::FFDisutilityFilePath& iFFDisutilityInputFilepath,
                   const SIMFQT::FareFilePath& iFareInputFilepath,
                   const AIRRAC::YieldFilePath& iYieldInputFilepath) 
     : _simlfsServiceContext (NULL) {
@@ -98,7 +106,8 @@ namespace SIMLFS {
     initStdAirService (iLogParams);
     
     // Initialise the (remaining of the) context
-    init (iScheduleInputFilename, iODInputFilename, iFareInputFilepath,
+    init (iScheduleInputFilepath, iODInputFilepath, iFRAT5InputFilepath,
+          iFFDisutilityInputFilepath, iFareInputFilepath,
           iYieldInputFilepath);
   }
 
@@ -159,8 +168,10 @@ namespace SIMLFS {
   }
   
   // ////////////////////////////////////////////////////////////////////
-  void SIMLFS_Service::init (const stdair::ScheduleFilePath& iScheduleInputFilename,
-                             const stdair::ODFilePath& iODInputFilename,
+  void SIMLFS_Service::init (const stdair::ScheduleFilePath& iScheduleInputFilepath,
+                             const stdair::ODFilePath& iODInputFilepath,
+                             const stdair::FRAT5FilePath& iFRAT5InputFilepath,
+                const stdair::FFDisutilityFilePath& iFFDisutilityInputFilepath,
                              const SIMFQT::FareFilePath& iFareInputFilepath,
                              const AIRRAC::YieldFilePath& iYieldInputFilepath) {
     
@@ -179,7 +190,8 @@ namespace SIMLFS {
     }
 
     // Initialise the children AirInv service context
-    initAIRINV_Master_Service (iScheduleInputFilename, iODInputFilename,
+    initAIRINV_Master_Service (iScheduleInputFilepath, iODInputFilepath,
+                               iFRAT5InputFilepath, iFFDisutilityInputFilepath,
                                iYieldInputFilepath);
 
     // Initialise the children SimFQT service context
@@ -215,8 +227,10 @@ namespace SIMLFS {
 
   // ////////////////////////////////////////////////////////////////////
   void SIMLFS_Service::
-  initAIRINV_Master_Service (const stdair::ScheduleFilePath& iScheduleInputFilename,
-                             const stdair::ODFilePath& iODInputFilename,
+  initAIRINV_Master_Service (const stdair::ScheduleFilePath& iScheduleInputFilepath,
+                             const stdair::ODFilePath& iODInputFilepath,
+                             const stdair::FRAT5FilePath& iFRAT5InputFilepath,
+                const stdair::FFDisutilityFilePath& iFFDisutilityInputFilepath,
                              const AIRRAC::YieldFilePath& iYieldInputFilepath) {
     
     // Retrieve the SimLFS service context
@@ -236,8 +250,10 @@ namespace SIMLFS {
       boost::make_shared<AIRINV::AIRINV_Master_Service> (lSTDAIR_Service_ptr);
 
     // Parse and load the schedule and O&D input files
-    lAIRINV_Master_Service_ptr->parseAndLoad (iScheduleInputFilename,
-                                              iODInputFilename,
+    lAIRINV_Master_Service_ptr->parseAndLoad (iScheduleInputFilepath,
+                                              iODInputFilepath,
+                                              iFRAT5InputFilepath,
+                                              iFFDisutilityInputFilepath,
                                               iYieldInputFilepath);
 
     // Store the Airinv service object within the (SimLFS) service context

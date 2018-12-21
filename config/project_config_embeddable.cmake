@@ -67,13 +67,19 @@ endmacro (set_project_versions)
 #  * ENABLE_TEST         - Whether or not to build and check the unit tests
 #  * INSTALL_DOC         - Whether or not to build and install the documentation
 #  * INSTALL_LIB_DIR     - Installation directory for the libraries
+#  * INSTALL_PY_LIB_DIR  - Installation directory for the Python libraries
 #  * INSTALL_BIN_DIR     - Installation directory for the binaries
+#  * INSTALL_LIBEXEC_DIR - Installation directory for the internal executables
 #  * INSTALL_INCLUDE_DIR - Installation directory for the header files
 #  * INSTALL_DATA_DIR    - Installation directory for the data files
 #  * INSTALL_SAMPLE_DIR  - Installation directory for the (CSV) sample files
 #  * RUN_GCOV            - Whether or not to perform code coverage
 #
 macro (set_project_options _build_doc _enable_tests _run_gcov)
+  # C++ standard (C++-11)
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
   # Shared libraries
   option (BUILD_SHARED_LIBS "Set to OFF to build static libraries" ON)
 
@@ -112,6 +118,8 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
   set (INSTALL_LIB_DIR ${LIBDIR} CACHE PATH
 	"Installation directory for libraries")
   set (INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
+  set (INSTALL_LIBEXEC_DIR CACHE PATH
+	"Installation directory for internal executables")
   set (INSTALL_INCLUDE_DIR include CACHE PATH
     "Installation directory for header files")
   set (INSTALL_DATA_DIR share CACHE PATH "Installation directory for data files")
@@ -123,15 +131,15 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
   option (RUN_GCOV "Set to OFF to skip code coverage" ${_run_gcov})
 
   # Make relative paths absolute (needed later on)
-  foreach (_path_type LIB BIN INCLUDE DATA SAMPLE)
+  foreach (_path_type LIB PY_LIB BIN LIBEXEC INCLUDE DATA SAMPLE)
     set (var INSTALL_${_path_type}_DIR)
     if (NOT IS_ABSOLUTE "${${var}}")
       set (${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
     endif ()
   endforeach (_path_type)
 
-  # When the install directory is the canonical one (i.e., /usr), the
-  # run-path/rpath must be set in all the (executable and library)
+  # When the install directory is not the canonical one (i.e., /usr),
+  # the run-path/rpath must be set in all the (executable and library)
   # binaries, so that the dynamic loader can find the dependencies
   # without the user having to set the LD_LIBRARY_PATH environment
   # variable.
@@ -139,7 +147,7 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
     set (CMAKE_INSTALL_RPATH "")
     set (CMAKE_INSTALL_RPATH_USE_LINK_PATH OFF)
   else()
-    set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
+    set (CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR} ${INSTALL_PY_LIB_DIR})
     set (CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
   endif()
 
@@ -158,8 +166,8 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
   if (NOT EXISTS ${DOC_NEWS_FILE})
     unset (DOC_NEWS_FILE)
   endif (NOT EXISTS ${DOC_NEWS_FILE})
-  set (BASICDOC_FILES AUTHORS ${DOC_NEWS_FILE} README ${DOC_INSTALL_FILE})
-  set (BASICDOC_PATH "share/doc/${PACKAGE}-${PACKAGE_VERSION}")
+  set (BASICDOC_FILES AUTHORS ${DOC_NEWS_FILE} README.md ${DOC_INSTALL_FILE})
+  set (BASICDOC_PATH "share/doc/${PACKAGE}")
 
 endmacro (set_project_options)
 
@@ -236,11 +244,11 @@ macro (packaging_set_other_options _package_type_list _source_package_type_list)
   set (CPACK_PACKAGE_VERSION ${${PROJECT_NAME}_VERSION})
 
   # Basic documentation
-  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-    message (FATAL_ERROR "A README file must be defined and located at the root directory")
-  endif (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-  set (CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/README)
-  set (CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README)
+  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+    message (FATAL_ERROR "A README.md file must be defined and located at the root directory")
+  endif (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+  set (CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+  set (CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
   # Licence
   if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/COPYING)
@@ -339,6 +347,10 @@ macro (get_external_libs)
       get_boost (${_arg_version})
     endif (${_arg_lower} STREQUAL "boost")
 
+    if (${_arg_lower} STREQUAL "protobuf")
+      get_protobuf (${_arg_version})
+    endif (${_arg_lower} STREQUAL "protobuf")
+
     if (${_arg_lower} STREQUAL "xapian")
       get_xapian (${_arg_version})
     endif (${_arg_lower} STREQUAL "xapian")
@@ -350,6 +362,10 @@ macro (get_external_libs)
     if (${_arg_lower} STREQUAL "curses")
       get_curses (${_arg_version})
     endif (${_arg_lower} STREQUAL "curses")
+
+    if (${_arg_lower} STREQUAL "sqlite")
+      get_sqlite (${_arg_version})
+    endif (${_arg_lower} STREQUAL "sqlite")
 
     if (${_arg_lower} STREQUAL "mysql")
       get_mysql (${_arg_version})
@@ -375,9 +391,9 @@ macro (get_external_libs)
       get_travelccm (${_arg_version})
     endif (${_arg_lower} STREQUAL "travelccm")
 
-    if (${_arg_lower} STREQUAL "airsched")
-      get_airsched (${_arg_version})
-    endif (${_arg_lower} STREQUAL "airsched")
+    if (${_arg_lower} STREQUAL "airtsp")
+      get_airtsp (${_arg_version})
+    endif (${_arg_lower} STREQUAL "airtsp")
 
     if (${_arg_lower} STREQUAL "airrac")
       get_airrac (${_arg_version})
@@ -484,7 +500,11 @@ macro (get_python)
       PYTHONLIBS_VERSION "${PYTHONLIBS_LIB_FILENAME}")
 	message (STATUS "Found PythonLibs ${PYTHONLIBS_VERSION}")
 
-    # Update the list of include directories for the project
+	# Set the Python installation directory
+	set (INSTALL_PY_LIB_DIR ${INSTALL_LIB_DIR}/python${PYTHONLIBS_VERSION}/site-packages/py${PROJECT_NAME}
+	  CACHE PATH "Installation directory for Python libraries")
+
+	# Update the list of include directories for the project
     include_directories (${PYTHON_INCLUDE_DIRS})
 
     # Update the list of dependencies for the project
@@ -498,6 +518,7 @@ endmacro (get_python)
 
 # ~~~~~~~~~~ ICU ~~~~~~~~~
 macro (get_icu)
+  # cmake_policy(SET CMP0074 NEW)
   unset (_required_version)
   if (${ARGC} GREATER 0)
     set (_required_version ${ARGV0})
@@ -584,8 +605,9 @@ macro (get_boost)
   set (Boost_USE_MULTITHREADED ON)
   set (Boost_USE_STATIC_RUNTIME OFF)
   set (BOOST_REQUIRED_COMPONENTS_FOR_LIB
-    date_time iostreams serialization filesystem system locale python)
-  set (BOOST_REQUIRED_COMPONENTS_FOR_BIN regex program_options)
+    date_time random iostreams serialization filesystem system
+	locale python27 python34 regex)
+  set (BOOST_REQUIRED_COMPONENTS_FOR_BIN program_options)
   set (BOOST_REQUIRED_COMPONENTS_FOR_TST unit_test_framework)
   set (BOOST_REQUIRED_COMPONENTS ${BOOST_REQUIRED_COMPONENTS_FOR_LIB}
 	${BOOST_REQUIRED_COMPONENTS_FOR_BIN} ${BOOST_REQUIRED_COMPONENTS_FOR_TST})
@@ -625,6 +647,129 @@ macro (get_boost)
   endif (Boost_FOUND)
 
 endmacro (get_boost)
+
+##
+# The following implementation derives from the eponym function, from
+# /usr/share/cmake/Modules/FindProtobuf.cmake, when such a function exists.
+# It exists in a Fedora 23+. Note that when the function exists in
+# FindProtobuf.cmake, it is not overriden by the implementation below.
+#
+# PROTOBUF_GENERATE_PYTHON (public function)
+#   _proto_srcs = Variable to define with autogenerated Python source files
+#   ARGN = proto files
+function (PROTOBUF_GENERATE_PYTHON _proto_srcs)
+  if (NOT ARGN)
+    message (SEND_ERROR
+	  "Error: PROTOBUF_GENERATE_PYTHON() called without any proto files")
+    return()
+  endif (NOT ARGN)
+
+  if (PROTOBUF_GENERATE_CPP_APPEND_PATH)
+    # Create an include path for each file specified
+    foreach (FIL ${ARGN})
+      get_filename_component (ABS_FIL ${FIL} ABSOLUTE)
+      get_filename_component (ABS_PATH ${ABS_FIL} PATH)
+      list (FIND _protobuf_include_path ${ABS_PATH} _contains_already)
+      if (${_contains_already} EQUAL -1)
+        list (APPEND _protobuf_include_path -I ${ABS_PATH})
+      endif (${_contains_already} EQUAL -1)
+    endforeach (FIL ${ARGN})
+  else (PROTOBUF_GENERATE_CPP_APPEND_PATH)
+    set (_protobuf_include_path -I ${CMAKE_CURRENT_SOURCE_DIR})
+  endif (PROTOBUF_GENERATE_CPP_APPEND_PATH)
+
+  if (DEFINED PROTOBUF_IMPORT_DIRS)
+    foreach (DIR ${PROTOBUF_IMPORT_DIRS})
+      get_filename_component (ABS_PATH ${DIR} ABSOLUTE)
+      list (FIND _protobuf_include_path ${ABS_PATH} _contains_already)
+      if (${_contains_already} EQUAL -1)
+          list (APPEND _protobuf_include_path -I ${ABS_PATH})
+      endif (${_contains_already} EQUAL -1)
+    endforeach (DIR ${PROTOBUF_IMPORT_DIRS})
+  endif (DEFINED PROTOBUF_IMPORT_DIRS)
+
+  set (${_proto_srcs})
+  foreach (FIL ${ARGN})
+	# Extract the file-path and the extension of the Protobuf specification file
+    get_filename_component (ABS_FIL ${FIL} ABSOLUTE)
+    get_filename_component (FIL_WE ${FIL} NAME_WE)
+
+	# With Python, Protobuf adds "_pb2"
+	set (_proto_gen_src ${FIL_WE}_pb2.py)
+
+	message (STATUS
+	  "Adding ${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src} to Python sources")
+
+    list (APPEND ${_proto_srcs} "${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}")
+
+	# Add a specific command for the Protobuf stub/skeleton generation
+    add_custom_command (OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}"
+      COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
+	  --python_out ${CMAKE_CURRENT_BINARY_DIR} ${_protobuf_include_path} ${ABS_FIL}
+      DEPENDS ${ABS_FIL} ${PROTOBUF_PROTOC_EXECUTABLE}
+      COMMENT "Running Python protocol buffer compiler on ${FIL}, generating ${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}"
+      VERBATIM)
+  endforeach (FIL ${ARGN})
+
+  set_source_files_properties (${${_proto_srcs}} PROPERTIES GENERATED TRUE)
+  set (${_proto_srcs} ${${_proto_srcs}} PARENT_SCOPE)
+endfunction (PROTOBUF_GENERATE_PYTHON)
+
+##
+# Internal function: search for normal library as well as a debug one
+#    if the debug one is specified also include debug/optimized keywords
+#    in *_LIBRARIES variable
+function(_protobuf_find_libraries name filename)
+  find_library(${name}_LIBRARY
+    NAMES ${filename}
+    PATHS ${PROTOBUF_SRC_ROOT_FOLDER}/vsprojects/Release)
+  mark_as_advanced(${name}_LIBRARY)
+
+  find_library(${name}_LIBRARY_DEBUG
+    NAMES ${filename}
+    PATHS ${PROTOBUF_SRC_ROOT_FOLDER}/vsprojects/Debug)
+  mark_as_advanced(${name}_LIBRARY_DEBUG)
+
+  if(NOT ${name}_LIBRARY_DEBUG)
+    # There is no debug library
+    set(${name}_LIBRARY_DEBUG ${${name}_LIBRARY} PARENT_SCOPE)
+    set(${name}_LIBRARIES     ${${name}_LIBRARY} PARENT_SCOPE)
+  else()
+    # There IS a debug library
+    set(${name}_LIBRARIES
+      optimized ${${name}_LIBRARY}
+      debug     ${${name}_LIBRARY_DEBUG}
+      PARENT_SCOPE
+      )
+  endif()
+endfunction()
+
+# ~~~~~~~~~~ Protobuf ~~~~~~~~~
+macro (get_protobuf)
+  unset (_required_version)
+  if (${ARGC} GREATER 0)
+    set (_required_version ${ARGV0})
+    message (STATUS "Requires Protobuf-${_required_version}")
+  else (${ARGC} GREATER 0)
+    message (STATUS "Requires Protobuf without specifying any version")
+  endif (${ARGC} GREATER 0)
+
+  set (PROTOBUF_FOUND False)
+
+  find_package (Protobuf ${_required_version} REQUIRED)
+  if (PROTOBUF_LIBRARY)
+    set (PROTOBUF_FOUND True)
+  endif (PROTOBUF_LIBRARY)
+
+  if (PROTOBUF_FOUND)
+    # Update the list of include directories for the project
+    include_directories (${PROTOBUF_INCLUDE_DIR})
+
+    # Update the list of dependencies for the project
+    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${PROTOBUF_LIBRARIES})
+  endif (PROTOBUF_FOUND)
+
+endmacro (get_protobuf)
 
 # ~~~~~~~~~~ Xapian ~~~~~~~~~
 macro (get_xapian)
@@ -712,6 +857,28 @@ macro (get_curses)
 
 endmacro (get_curses)
 
+# ~~~~~~~~~~ SQLite3 ~~~~~~~~~
+macro (get_sqlite)
+  unset (_required_version)
+  if (${ARGC} GREATER 0)
+    set (_required_version ${ARGV0})
+    message (STATUS "Requires SQLite3-${_required_version}")
+  else (${ARGC} GREATER 0)
+    message (STATUS "Requires SQLite3 without specifying any version")
+  endif (${ARGC} GREATER 0)
+
+  find_package (SQLite3 ${_required_version} REQUIRED)
+  if (SQLITE3_FOUND)
+
+    # Update the list of include directories for the project
+    include_directories (${SQLITE3_INCLUDE_DIR})
+
+    # Update the list of dependencies for the project
+    set (PROJ_DEP_LIBS_FOR_LIB ${PROJ_DEP_LIBS_FOR_LIB} ${SQLITE3_LIBRARIES})
+  endif (SQLITE3_FOUND)
+
+endmacro (get_sqlite)
+
 # ~~~~~~~~~~ MySQL ~~~~~~~~~
 macro (get_mysql)
   unset (_required_version)
@@ -744,6 +911,17 @@ macro (get_soci)
     message (STATUS "Requires SOCI without specifying any version")
   endif (${ARGC} GREATER 0)
 
+  # SOCI core
+  find_package (SOCI ${_required_version} REQUIRED)
+  if (SOCI_FOUND)
+    #
+    message (STATUS "Found SOCI with version: ${SOCI_HUMAN_VERSION}")
+
+    # Update the list of include directories for the project
+    include_directories (${SOCI_INCLUDE_DIR})
+  endif (SOCI_FOUND)
+
+  # SOCI MySQL
   find_package (SOCIMySQL ${_required_version} REQUIRED)
   if (SOCIMYSQL_FOUND)
     #
@@ -751,12 +929,25 @@ macro (get_soci)
 	  " ${SOCI_HUMAN_VERSION}")
 
     # Update the list of include directories for the project
-    include_directories (${SOCI_INCLUDE_DIR})
     include_directories (${SOCIMYSQL_INCLUDE_DIR})
 
     # Update the list of dependencies for the project
     list (APPEND PROJ_DEP_LIBS_FOR_LIB ${SOCI_LIBRARIES} ${SOCIMYSQL_LIBRARIES})
   endif (SOCIMYSQL_FOUND)
+
+  # SOCI SQLite
+  find_package (SOCISQLite ${_required_version} REQUIRED)
+  if (SOCISQLITE_FOUND)
+    #
+    message (STATUS "Found SOCI with SQLite back-end support version:"
+	  " ${SOCI_HUMAN_VERSION}")
+
+    # Update the list of include directories for the project
+    include_directories (${SOCISQLITE_INCLUDE_DIR})
+
+    # Update the list of dependencies for the project
+    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${SOCI_LIBRARIES} ${SOCISQLITE_LIBRARIES})
+  endif (SOCISQLITE_FOUND)
 
 endmacro (get_soci)
 
@@ -908,37 +1099,37 @@ macro (get_travelccm)
 
 endmacro (get_travelccm)
 
-# ~~~~~~~~~~ AirSched ~~~~~~~~~
-macro (get_airsched)
+# ~~~~~~~~~~ AirTSP ~~~~~~~~~
+macro (get_airtsp)
   unset (_required_version)
   if (${ARGC} GREATER 0)
     set (_required_version ${ARGV0})
-    message (STATUS "Requires AirSched-${_required_version}")
+    message (STATUS "Requires AirTSP-${_required_version}")
   else (${ARGC} GREATER 0)
-    message (STATUS "Requires AirSched without specifying any version")
+    message (STATUS "Requires AirTSP without specifying any version")
   endif (${ARGC} GREATER 0)
 
-  find_package (AirSched ${_required_version} REQUIRED
-	HINTS ${WITH_AIRSCHED_PREFIX})
-  if (AirSched_FOUND)
+  find_package (AirTSP ${_required_version} REQUIRED
+	HINTS ${WITH_AIRTSP_PREFIX})
+  if (AirTSP_FOUND)
     #
-    message (STATUS "Found AirSched version: ${AIRSCHED_VERSION}")
+    message (STATUS "Found AirTSP version: ${AIRTSP_VERSION}")
 
     # Update the list of include directories for the project
-    include_directories (${AIRSCHED_INCLUDE_DIRS})
+    include_directories (${AIRTSP_INCLUDE_DIRS})
 
     # Update the list of dependencies for the project
-    set (PROJ_DEP_LIBS_FOR_LIB ${PROJ_DEP_LIBS_FOR_LIB} ${AIRSCHED_LIBRARIES})
+    set (PROJ_DEP_LIBS_FOR_LIB ${PROJ_DEP_LIBS_FOR_LIB} ${AIRTSP_LIBRARIES})
 
-  else (AirSched_FOUND)
-    set (ERROR_MSG "The AirSched library cannot be found. If it is installed")
+  else (AirTSP_FOUND)
+    set (ERROR_MSG "The AirTSP library cannot be found. If it is installed")
     set (ERROR_MSG "${ERROR_MSG} in a in a non standard directory, just invoke")
-    set (ERROR_MSG "${ERROR_MSG} 'cmake' specifying the -DWITH_AIRSCHED_PREFIX=")
-    set (ERROR_MSG "${ERROR_MSG}<AirSched install path> variable.")
+    set (ERROR_MSG "${ERROR_MSG} 'cmake' specifying the -DWITH_AIRTSP_PREFIX=")
+    set (ERROR_MSG "${ERROR_MSG}<AirTSP install path> variable.")
     message (FATAL_ERROR "${ERROR_MSG}")
-  endif (AirSched_FOUND)
+  endif (AirTSP_FOUND)
 
-endmacro (get_airsched)
+endmacro (get_airtsp)
 
 # ~~~~~~~~~~ AirRAC ~~~~~~~~~
 macro (get_airrac)
@@ -1258,6 +1449,7 @@ macro (set_install_directories)
   set (exec_prefix   ${prefix})
   set (bindir        ${exec_prefix}/bin)
   set (libdir        ${exec_prefix}/${LIBDIR})
+  set (pylibdir	     ${libdir}/python${PYTHONLIBS_VERSION}/site-packages/py${PACKAGE})
   set (libexecdir    ${exec_prefix}/libexec)
   set (sbindir       ${exec_prefix}/sbin)
   set (sysconfdir    ${prefix}/etc)
@@ -1332,7 +1524,7 @@ macro (module_generate_config_helpers)
   if (EXISTS ${PROJ_PATH_CFG_SRC})
     set (PROJ_PATH_CFG ${PROJ_PATH_CFG_DIR}/${MODULE_NAME}-paths.hpp)
     configure_file (${PROJ_PATH_CFG_SRC} ${PROJ_PATH_CFG} @ONLY)
-  
+
     # Add the 'hdr_cfg_${MODULE_NAME}' target, depending on the converted header
     add_custom_target (hdr_cfg_${MODULE_NAME} ALL DEPENDS ${PROJ_PATH_CFG})
 
@@ -1341,6 +1533,33 @@ macro (module_generate_config_helpers)
   endif (EXISTS ${PROJ_PATH_CFG_SRC})
 
 endmacro (module_generate_config_helpers)
+
+##
+# Detect and generate Protobuf-related stubs
+macro (layer_generate_protobuf _protobuf_dir)
+
+  # Detect the presence of Protobuf specification files
+  file (GLOB _pb_interface_list
+	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${_protobuf_dir}*.proto)
+
+  # Generate the Protobuf stubs/skeletons for every Protobuf specification
+  # file detected
+  foreach (_proto_file ${_pb_interface_list})
+	# Build the C++ stubs/skeletons
+	PROTOBUF_GENERATE_CPP (PROTO_CPP_SRCS PROTO_CPP_HDRS ${_proto_file})
+	# Build the Python helper
+	# Deprecated? PROTOBUF_GENERATE_PYTHON (PROTO_PY_SRCS python ${_proto_file})
+	PROTOBUF_GENERATE_PYTHON (PROTO_PY_SRCS ${_proto_file})
+
+	# Specify the source file, which is by convention (here) made of the name
+	# of the Protobuf interface file suffixed by .hpp/.cpp
+	list (APPEND ${MODULE_LIB_TARGET}_HEADERS ${PROTO_CPP_HDRS})
+	list (APPEND ${MODULE_LIB_TARGET}_SOURCES ${PROTO_CPP_SRCS})
+	list (APPEND ${MODULE_LIB_TARGET}_PY_SRCS ${PROTO_PY_SRCS})
+
+  endforeach (_proto_file ${_pb_interface_list})
+
+endmacro (layer_generate_protobuf)
 
 ##
 # Building and installation of the "standard library".
@@ -1404,6 +1623,10 @@ macro (module_library_add_standard _layer_list)
       set (_layer_dir_name "")
     endif ("${_layer_dir_name}" STREQUAL "./")
 
+	# Generate the Protobuf stubs/skeletons for that layer
+	layer_generate_protobuf ("${_layer_dir_name}")
+
+	#
     file (GLOB ${MODULE_LIB_TARGET}_${_layer_name}_HEADERS 
       RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${_layer_dir_name}*.hpp)
     list (APPEND ${MODULE_LIB_TARGET}_HEADERS
@@ -1439,7 +1662,7 @@ macro (module_library_add_standard _layer_list)
 
   # Convenient message to the user/developer
   if (NOT CMAKE_INSTALL_RPATH_USE_LINK_PATH)
-    install (CODE "message (\"On Unix-based platforms, run export LD_LIBRARY_PATH=${INSTALL_LIB_DIR}:\$LD_LIBRARY_PATH once per session\")")
+    install (CODE "message (\"On Unix-based platforms, run export LD_LIBRARY_PATH=${INSTALL_LIB_DIR}:${INSTALL_PY_LIB_DIR}:\$LD_LIBRARY_PATH once per session\")")
   endif (NOT CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
 endmacro (module_library_add_standard)
@@ -1470,6 +1693,8 @@ macro (module_library_add_specific
   # Derive the library (CMake) target from its name
   set (_lib_target ${_lib_short_name}lib)
 
+  string (SUBSTRING ${_lib_short_name} 0 2 _lib_prefix)
+
   # Register the (CMake) target for the library
   add_library (${_lib_target} SHARED ${_lib_sources})
 
@@ -1479,7 +1704,7 @@ macro (module_library_add_specific
   foreach (_arg_module ${ARGV})
 
     if (NOT "${_lib_dir};${_lib_short_name};${_lib_headers};${_lib_sources}" 
-	MATCHES "${_arg_module}")
+		MATCHES "${_arg_module}")
       list (APPEND _intermodule_dependencies ${_arg_module}lib)
     endif ()
   endforeach (_arg_module)
@@ -1518,6 +1743,15 @@ macro (module_library_add_specific
     add_dependencies (${_lib_target} hdr_cfg_${MODULE_NAME})
   endif (${_lib_short_name} STREQUAL ${MODULE_NAME})
 
+  if ("${_lib_prefix}" STREQUAL "py")
+    # no 'lib' prefix
+    set_target_properties (${_lib_target} PROPERTIES
+           PREFIX "")
+    # must be .so (even on MacOS, not .dylib)
+    set_target_properties (${_lib_target} PROPERTIES
+           SUFFIX ".so")
+  endif ("${_lib_prefix}" STREQUAL "py")
+
   ##
   # Library name (and soname)
   if (WIN32)
@@ -1540,10 +1774,21 @@ macro (module_library_add_specific
 
   ##
   # Installation of the library
-  install (TARGETS ${_lib_target}
-    EXPORT ${LIB_DEPENDENCY_EXPORT}
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT runtime)
+  string (SUBSTRING ${_lib_short_name} 0 2 _lib_prefix)
+  if ("${_lib_prefix}" STREQUAL "py")
+	# If the library is Python, install it into a dedicated directory
+	message (STATUS "${_lib_short_name} is assumed to be a Python library")
+	install (TARGETS ${_lib_target}
+      EXPORT ${LIB_DEPENDENCY_EXPORT}
+      LIBRARY DESTINATION "${INSTALL_PY_LIB_DIR}" COMPONENT runtime)
 
+  else ("${_lib_prefix}" STREQUAL "py")
+	# Install the library in the standard location
+	install (TARGETS ${_lib_target}
+      EXPORT ${LIB_DEPENDENCY_EXPORT}
+      LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT runtime)
+  endif ("${_lib_prefix}" STREQUAL "py")
+  
   # Register, for reporting purpose, the list of libraries to be built
   # and installed for that module
   list (APPEND ${MODULE_NAME}_ALL_LIBS ${_lib_target})
@@ -1666,6 +1911,16 @@ macro (module_config_add _config_source_dir)
 endmacro (module_config_add)
 
 ##
+# Installation of Python module scripts (e.g., __init__.py)
+#
+# The parameter is the relative file path of the Python initialiser script
+# to be installed. A typical Python module script is __init__.py
+# 
+macro (python_module_add _python_module_file_path)
+  install (FILES ${_python_module_file_path} DESTINATION ${INSTALL_PY_LIB_DIR})
+endmacro (python_module_add)
+
+##
 # Add a (Shell, Python, Perl, Ruby, etc) script to be installed.
 #
 # The parameter is the relative file path of the (template) script to
@@ -1685,16 +1940,31 @@ macro (module_script_add _script_file)
 	# Extract the file name (only) from the full file path
 	get_filename_component (_script_alone ${_script_file} NAME)
     
+	# Initialise the list of script sources with the script itself
+	set (_full_script_srcs ${_full_script_path})
+
+	# If the script is Python, add a dependency on the Protobuf-related helpers
+	string (SUBSTRING ${_script_alone} 0 2 _script_ext)
+	if ("${_script_ext}" STREQUAL "py")
+	  message (STATUS "${_script_file} is assumed to be a Python script")
+	  message (STATUS " => Added dependencies: ${${MODULE_LIB_TARGET}_PY_SRCS}")
+      list (APPEND _full_script_srcs ${${MODULE_LIB_TARGET}_PY_SRCS})
+
+      # Install the Python helpers
+      install (PROGRAMS ${${MODULE_LIB_TARGET}_PY_SRCS}
+		DESTINATION "${INSTALL_PY_LIB_DIR}" COMPONENT devel)
+	endif ("${_script_ext}" STREQUAL "py")
+
 	# Add the 'scripts_${MODULE_NAME}' target, depending on the
     # converted (Shell, Python, Perl, Ruby, etc) scripts
-    add_custom_target (${_script_alone}_script ALL DEPENDS ${_full_script_path})
+    add_custom_target (${_script_alone}_script ALL DEPENDS ${_full_script_srcs})
 
     # Install the (Shell, Python, Perl, Ruby, etc) script file
     install (PROGRAMS ${_full_script_path} DESTINATION bin COMPONENT devel)
 
   else (EXISTS ${_full_script_src_path})
     message (FATAL_ERROR
-      "The Python template script, '${_script_file}.in', does not exist")
+      "The template of the script, '${_script_file}.in', does not exist")
   endif (EXISTS ${_full_script_src_path})
 
   # Register the binary target in the project (for reporting purpose)
@@ -1772,6 +2042,7 @@ endmacro (add_test_suite)
 ##
 # Register a test with CMake/CTest.
 # The parameters are:
+#  * The name of the test module
 #  * The name of the test, which will serve as the name for the test binary.
 #  * The list of sources for the test binary. The list must be
 #    semi-colon (';') seperated.
@@ -1808,7 +2079,8 @@ macro (module_test_add_suite _module_name _test_name _test_sources)
 
     # Tell the test binary that it depends on all those libraries
     target_link_libraries (${_test_name}tst ${_library_list} 
-      ${MODULE_LIB_TARGET} ${PROJ_DEP_LIBS_FOR_TST})
+      ${MODULE_LIB_TARGET} ${${MODULE_NAME}_INTER_TARGETS}
+	  ${PROJ_DEP_LIBS_FOR_TST})
 
     # Register the binary target in the module
     list (APPEND ${MODULE_NAME}_ALL_TST_TARGETS ${_test_name}tst)
@@ -2002,7 +2274,7 @@ macro (doc_add_web_pages)
 
   ##
   # Installation of the HTML documentation
-  set (DOC_PATH share/doc/${PROJECT_NAME}-${CPACK_PACKAGE_VERSION})
+  set (DOC_PATH share/doc/${PROJECT_NAME})
   # HTML pages
   install (DIRECTORY ${htmldoc_DIR} DESTINATION ${DOC_PATH})
   # PDF reference manual
@@ -2057,9 +2329,9 @@ macro (doc_add_man_pages)
     foreach (_option_item ${ARGN})
       string (REGEX MATCH "MAN([1-9])" _current_section_tmp "${_option_item}")
       if ("${CMAKE_MATCH_1}" STREQUAL "")
-	list (APPEND _man_arg_MAN${_current_section} ${_option_item})
+		list (APPEND _man_arg_MAN${_current_section} ${_option_item})
       else ("${CMAKE_MATCH_1}" STREQUAL "")
-	set (_current_section "${CMAKE_MATCH_1}")
+		set (_current_section "${CMAKE_MATCH_1}")
       endif ("${CMAKE_MATCH_1}" STREQUAL "")
     endforeach (_option_item ${ARGN})
   endif (${CMAKE_VERSION} VERSION_GREATER 2.8.1)
@@ -2186,6 +2458,8 @@ macro (install_dev_helper_files)
   set (${PACKAGE_NAME}_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
   set (${PACKAGE_NAME}_BIN_DIR "${INSTALL_BIN_DIR}")
   set (${PACKAGE_NAME}_LIB_DIR "${INSTALL_LIB_DIR}")
+  set (${PACKAGE_NAME}_LIBEXEC_DIR "${INSTALL_LIBEXEC_DIR}")
+  set (${PACKAGE_NAME}_PY_LIB_DIR "${INSTALL_PY_LIB_DIR}")
   set (${PACKAGE_NAME}_SAMPLE_DIR "${INSTALL_SAMPLE_DIR}")
   set (${PACKAGE_NAME}_CMAKE_DIR "${LIB_DEPENDENCY_EXPORT_PATH}")
   configure_file (${PROJECT_NAME}-config.cmake.in
@@ -2308,6 +2582,19 @@ macro (display_boost)
   endif (Boost_FOUND)
 endmacro (display_boost)
 
+# Protobuf
+macro (display_protobuf)
+  if (PROTOBUF_FOUND)
+    message (STATUS)
+    message (STATUS "* Protobuf:")
+    message (STATUS "  - PROTOBUF_VERSION .............. : ${PROTOBUF_VERSION}")
+    message (STATUS "  - PROTOBUF_INCLUDE_DIR .......... : ${PROTOBUF_INCLUDE_DIR}")
+    message (STATUS "  - PROTOBUF_LIBRARY .............. : ${PROTOBUF_LIBRARY}")
+    message (STATUS "  - PROTOBUF_PROTOC_EXECUTABLE .... : ${PROTOBUF_PROTOC_EXECUTABLE}")
+    message (STATUS "  - PROTOBUF_PROTOC_LIBRARY ....... : ${PROTOBUF_PROTOC_LIBRARY}")
+  endif (PROTOBUF_FOUND)
+endmacro (display_protobuf)
+
 # Xapian
 macro (display_xapian)
   if (XAPIAN_FOUND)
@@ -2341,6 +2628,17 @@ macro (display_curses)
   endif (CURSES_FOUND)
 endmacro (display_curses)
 
+# SQLite3
+macro (display_sqlite)
+  if (SQLITE3_FOUND)
+    message (STATUS)
+    message (STATUS "* SQLite3:")
+    message (STATUS "  - SQLITE3_VERSION ................. : ${SQLITE3_VERSION}")
+    message (STATUS "  - SQLITE3_INCLUDE_DIR ............. : ${SQLITE3_INCLUDE_DIR}")
+    message (STATUS "  - SQLITE3_LIBRARIES ............... : ${SQLITE3_LIBRARIES}")
+  endif (SQLITE3_FOUND)
+endmacro (display_sqlite)
+
 # MySQL
 macro (display_mysql)
   if (MYSQL_FOUND)
@@ -2362,8 +2660,10 @@ macro (display_soci)
     message (STATUS "  - SOCI_HUMAN_VERSION ............ : ${SOCI_HUMAN_VERSION}")
     message (STATUS "  - SOCI_INCLUDE_DIR .............. : ${SOCI_INCLUDE_DIR}")
     message (STATUS "  - SOCIMYSQL_INCLUDE_DIR ......... : ${SOCIMYSQL_INCLUDE_DIR}")
+    message (STATUS "  - SOCISQLITE_INCLUDE_DIR ........ : ${SOCISQLITE_INCLUDE_DIR}")
     message (STATUS "  - SOCI_LIBRARIES ................ : ${SOCI_LIBRARIES}")
     message (STATUS "  - SOCIMYSQL_LIBRARIES ........... : ${SOCIMYSQL_LIBRARIES}")
+    message (STATUS "  - SOCISQLITE_LIBRARIES .......... : ${SOCISQLITE_LIBRARIES}")
   endif (SOCI_FOUND)
 endmacro (display_soci)
 
@@ -2424,19 +2724,19 @@ macro (display_travelccm)
   endif (TravelCCM_FOUND)
 endmacro (display_travelccm)
 
-# AirSched
-macro (display_airsched)
-  if (AirSched_FOUND)
+# AirTSP
+macro (display_airtsp)
+  if (AirTSP_FOUND)
     message (STATUS)
-    message (STATUS "* AirSched:")
-    message (STATUS "  - AIRSCHED_VERSION .............. : ${AIRSCHED_VERSION}")
-    message (STATUS "  - AIRSCHED_BINARY_DIRS .......... : ${AIRSCHED_BINARY_DIRS}")
-    message (STATUS "  - AIRSCHED_EXECUTABLES .......... : ${AIRSCHED_EXECUTABLES}")
-    message (STATUS "  - AIRSCHED_LIBRARY_DIRS ......... : ${AIRSCHED_LIBRARY_DIRS}")
-    message (STATUS "  - AIRSCHED_LIBRARIES ............ : ${AIRSCHED_LIBRARIES}")
-    message (STATUS "  - AIRSCHED_INCLUDE_DIRS ......... : ${AIRSCHED_INCLUDE_DIRS}")
-  endif (AirSched_FOUND)
-endmacro (display_airsched)
+    message (STATUS "* AirTSP:")
+    message (STATUS "  - AIRTSP_VERSION .............. : ${AIRTSP_VERSION}")
+    message (STATUS "  - AIRTSP_BINARY_DIRS .......... : ${AIRTSP_BINARY_DIRS}")
+    message (STATUS "  - AIRTSP_EXECUTABLES .......... : ${AIRTSP_EXECUTABLES}")
+    message (STATUS "  - AIRTSP_LIBRARY_DIRS ......... : ${AIRTSP_LIBRARY_DIRS}")
+    message (STATUS "  - AIRTSP_LIBRARIES ............ : ${AIRTSP_LIBRARIES}")
+    message (STATUS "  - AIRTSP_INCLUDE_DIRS ......... : ${AIRTSP_INCLUDE_DIRS}")
+  endif (AirTSP_FOUND)
+endmacro (display_airtsp)
 
 # AirRAC
 macro (display_airrac)
@@ -2577,14 +2877,14 @@ endmacro (display_status_all_test_suites)
 ##
 macro (display_doc_generation)
   message (STATUS)
-    message (STATUS "* Documentation to be generated ... :")
-	if (INSTALL_DOC)
-      message (STATUS "  + HTML main page ................ : ${DOXYGEN_OUTPUT_REL}")
-      message (STATUS "  + CSS-related files ............. : ${CSS_ALL_TARGETS}")
-      message (STATUS "  + Image-related files ........... : ${IMG_ALL_TARGETS}")
-      message (STATUS "  + PDF reference manual .......... : ${REFMAN_TEX} => ${REFMAN_PDF}")
-	endif (INSTALL_DOC)
-    message (STATUS "  + Man page sections ............. : ${MAN_ALL_TARGETS}")
+  message (STATUS "* Documentation to be generated ... :")
+  if (INSTALL_DOC)
+    message (STATUS "  + HTML main page ................ : ${DOXYGEN_OUTPUT_REL}")
+    message (STATUS "  + CSS-related files ............. : ${CSS_ALL_TARGETS}")
+    message (STATUS "  + Image-related files ........... : ${IMG_ALL_TARGETS}")
+    message (STATUS "  + PDF reference manual .......... : ${REFMAN_TEX} => ${REFMAN_PDF}")
+  endif (INSTALL_DOC)
+  message (STATUS "  + Man page sections ............. : ${MAN_ALL_TARGETS}")
 endmacro (display_doc_generation)
 
 ##
@@ -2633,7 +2933,9 @@ macro (display_status)
   message (STATUS "---  Installation Configuration   ---")
   message (STATUS "-------------------------------------")
   message (STATUS "INSTALL_LIB_DIR ................... : ${INSTALL_LIB_DIR}")
+  message (STATUS "INSTALL_PY_LIB_DIR ................ : ${INSTALL_PY_LIB_DIR}")
   message (STATUS "INSTALL_BIN_DIR ................... : ${INSTALL_BIN_DIR}")
+  message (STATUS "INSTALL_LIBEXEC_DIR ............... : ${INSTALL_LIBEXEC_DIR}")
   message (STATUS "CMAKE_INSTALL_RPATH ............... : ${CMAKE_INSTALL_RPATH}")
   message (STATUS "CMAKE_INSTALL_RPATH_USE_LINK_PATH . : ${CMAKE_INSTALL_RPATH_USE_LINK_PATH}")
   message (STATUS "INSTALL_INCLUDE_DIR ............... : ${INSTALL_INCLUDE_DIR}")
@@ -2663,16 +2965,18 @@ macro (display_status)
   display_icu ()
   display_zeromq ()
   display_boost ()
+  display_protobuf ()
   display_xapian ()
   display_readline ()
   display_curses ()
+  display_sqlite ()
   display_mysql ()
   display_soci ()
   display_stdair ()
   display_sevmgr ()
   display_trademgen ()
   display_travelccm ()
-  display_airsched ()
+  display_airtsp ()
   display_airrac ()
   display_rmol ()
   display_airinv ()

@@ -76,7 +76,7 @@ install_basic_documentation ()
 ##            Documentation             ##
 ##########################################
 #
-handle_html_doc ()
+#handle_html_doc ()
 
 ##
 # Subdirs

@@ -50,8 +50,9 @@ http://sourceforge.net/project/showfiles.php?group_id=365521
 
 Then, as usual:
 * To configure the project, type something like:
+  LFS_VER=1.00.1
   mkdir build && cd build
-  cmake -DCMAKE_INSTALL_PREFIX=/home/user/dev/deliveries/simlfs-1.00.0 \
+  cmake -DCMAKE_INSTALL_PREFIX=/home/user/dev/deliveries/simlfs-${LFS_VER} \
    -DWITH_STDAIR_PREFIX=/home/user/dev/deliveries/stdair-stable \
    -DWITH_AIRRAC_PREFIX=/home/user/dev/deliveries/airrac-stable \
    -DWITH_RMOL_PREFIX=/home/user/dev/deliveries/rmol-stable \

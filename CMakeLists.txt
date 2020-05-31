@@ -9,8 +9,8 @@ include (config/project_config_embeddable.cmake)
 # Project info
 project (simlfs)
 set_project_names (simlfs SimLFS)
-set_project_brief ("C++ Simulated Low Fare Search (LFS) library")
-set_project_versions (1 00 1)
+set_project_brief ("C++ Simulated Low Fare Search (LFS) Library")
+set_project_versions (1 00 2)
 
 ##
 # Project options
@@ -46,7 +46,7 @@ packaging_set_other_options (TBZ2 "TBZ2;TGZ")
 ##            Dependencies            ##
 ########################################
 #
-get_external_libs (git "python 3.4" "boost 1.41" readline mysql "soci 3.0"
+get_external_libs (git "boost 1.41" readline mysql "soci 3.0"
   "stdair 1.00.0" "airrac 1.00.0" "rmol 1.00.0" "sevmgr 1.00.0" "airinv 1.00.0" 
   "simfqt 1.00.0" doxygen "gcov 4.6.3" "lcov 1.9")
 

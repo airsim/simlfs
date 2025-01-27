@@ -10,7 +10,7 @@ include (config/project_config_embeddable.cmake)
 project (simlfs)
 set_project_names (simlfs SimLFS)
 set_project_brief ("C++ Simulated Low Fare Search (LFS) Library")
-set_project_versions (1 00 6)
+set_project_versions (1 00 7)
 
 ##
 # Project options

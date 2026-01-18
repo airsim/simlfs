@@ -5,7 +5,6 @@
 ## Date: July 2011
 #######################################################################
 
-
 ###################################################################
 ##                     Project Configuration                     ##
 ###################################################################
@@ -75,8 +74,8 @@ endmacro (set_project_versions)
 #  * RUN_GCOV             - Whether or not to perform code coverage
 #
 macro (set_project_options _build_doc _enable_tests _run_gcov)
-  # C++ standard (C++-14)
-  set(CMAKE_CXX_STANDARD 14)
+  # C++ standard (C++-17)
+  set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
   # Shared libraries
@@ -92,6 +91,8 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
   if (CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
     set (CMAKE_INSTALL_PREFIX "/usr")
   endif()
+
+  include(GNUInstallDirs)
 
   # Unit tests (thanks to CMake/CTest)
   option (ENABLE_TEST "Set to OFF to skip build/check unit tests"
@@ -110,33 +111,21 @@ macro (set_project_options _build_doc _enable_tests _run_gcov)
   set (MAN_ALL_TARGETS)
   set (NEED_PYTHON OFF)
 
-  # Set the library installation directory (either 32 or 64 bits)
-  set (LIBDIR "lib${LIB_SUFFIX}" CACHE PATH
-    "Library directory name, either lib or lib64")
-
   # Offer the user the choice of overriding the installation directories
-  set (INSTALL_LIB_DIR ${LIBDIR} CACHE PATH
+  set (INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH
 	"Installation directory for libraries")
-  set (INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
-  set (INSTALL_LIBEXEC_DIR CACHE PATH
+  set (INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE PATH "Installation directory for executables")
+  set (INSTALL_LIBEXEC_DIR ${CMAKE_INSTALL_LIBEXECDIR} CACHE PATH
 	"Installation directory for internal executables")
-  set (INSTALL_INCLUDE_DIR include CACHE PATH
+  set (INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH
     "Installation directory for header files")
-  set (INSTALL_DATA_DIR share CACHE PATH "Installation directory for data files")
-  set (INSTALL_SAMPLE_DIR share/${PROJECT_NAME}/samples CACHE PATH
+  set (INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR} CACHE PATH "Installation directory for data files")
+  set (INSTALL_SAMPLE_DIR ${INSTALL_DATA_DIR}/${PROJECT_NAME}/samples CACHE PATH
     "Installation directory for (CSV) sample files")
-  set (INSTALL_ETC_DIR etc CACHE PATH "Installation directory for Config files")
+  set (INSTALL_ETC_DIR ${CMAKE_INSTALL_SYSCONFDIR} CACHE PATH "Installation directory for Config files")
 
   # GCOV
   option (RUN_GCOV "Set to OFF to skip code coverage" ${_run_gcov})
-
-  # Make relative paths absolute (needed later on)
-  foreach (_path_type LIB PY_LIB BIN LIBEXEC INCLUDE DATA SAMPLE)
-    set (var INSTALL_${_path_type}_DIR)
-    if (NOT IS_ABSOLUTE "${${var}}")
-      set (${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
-    endif ()
-  endforeach (_path_type)
 
   # When the install directory is not the canonical one (i.e., /usr),
   # the run-path/rpath must be set in all the (executable and library)
@@ -308,7 +297,7 @@ endmacro (packaging_set_other_options)
 ###################################################################
 # ~~~~~~~~ Wrapper ~~~~~~~~
 macro (get_external_libs)
-  # CMake scripts, to find some dependencies (e.g., Boost, MySQL, SOCI)
+  # CMake scripts, to find some dependencies (e.g., Boost, PostgreSQL, MySQL, SOCI)
   set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config/)
 
   #
@@ -373,6 +362,10 @@ macro (get_external_libs)
     if (${_arg_lower} STREQUAL "sqlite")
       get_sqlite (${_arg_version})
     endif (${_arg_lower} STREQUAL "sqlite")
+
+    if (${_arg_lower} STREQUAL "postgres")
+      get_postgres (${_arg_version})
+    endif (${_arg_lower} STREQUAL "postgres")
 
     if (${_arg_lower} STREQUAL "mysql")
       get_mysql (${_arg_version})
@@ -504,9 +497,6 @@ macro (get_python)
   #find_package (PythonExtensions REQUIRED)
   include(targetLinkLibrariesWithDynamicLookup)
 
-  # The second check is to get the dynamic library for sure.
-  #find_package (PythonLibsWrapper ${_required_version} REQUIRED)
-
   if (Python3_FOUND)
     message (STATUS "Found Python3 ${Python3_VERSION} (${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}.${Python3_VERSION_PATCH})")
 
@@ -615,16 +605,15 @@ macro (get_boost)
   #         On some platform/Boost version combinations, the Python version
   #         may be just the major version (2 or 3 as of 2020) or the major
   #         and minor versions (e.g., 27, 28, 34, 36, 37, 38, 39 as of 2020)
-  # Note 3: Boot.Python has is reuired only for Python extensions. It should
+  # Note 3: Boot.Python is required only for Python extensions. It should
   #         not be linked with other regular (non-Python) libraries/binaries,
   #         as it pulls with it symbols from the Python interpreter, which are
   #         available only when launched from a Python interpreter.
   set (Boost_USE_STATIC_LIBS OFF)
   set (Boost_USE_MULTITHREADED ON)
   set (Boost_USE_STATIC_RUNTIME OFF)
-  # Boost.Python - Depending on the platforms, the component name
-  # differs. We try all of them, and the find_package() will retrieve
-  # just one
+  # Boost.Python - Depending on the platforms, the component name differs.
+  # We try all of them, and the find_package() will retrieve just one
   if (NEED_PYTHON)
     set (python_cpt_name0 "python")
     #
@@ -639,7 +628,7 @@ macro (get_boost)
 
   # Boost components for (non-Python) libraries
   set (BOOST_REQUIRED_COMPONENTS_FOR_LIB
-    date_time random iostreams serialization filesystem system locale regex)
+    date_time random iostreams serialization filesystem locale regex)
 
   # Boost components for Python extensions
   if (NEED_PYTHON)
@@ -756,102 +745,6 @@ macro (get_boost)
 
 endmacro (get_boost)
 
-##
-# The following implementation derives from the eponym function, from
-# /usr/share/cmake/Modules/FindProtobuf.cmake, when such a function exists.
-# It exists in a Fedora 23+. Note that when the function exists in
-# FindProtobuf.cmake, it is not overriden by the implementation below.
-#
-# PROTOBUF_GENERATE_PYTHON2 (public function)
-#   _proto_srcs = Variable to define with autogenerated Python source files
-#   ARGN = proto files
-function (PROTOBUF_GENERATE_PYTHON2 _proto_srcs)
-  if (NOT ARGN)
-    message (SEND_ERROR
-	  "Error: PROTOBUF_GENERATE_PYTHON2() called without any proto files")
-    return()
-  endif (NOT ARGN)
-
-  if (PROTOBUF_GENERATE_CPP_APPEND_PATH)
-    # Create an include path for each file specified
-    foreach (FIL ${ARGN})
-      get_filename_component (ABS_FIL ${FIL} ABSOLUTE)
-      get_filename_component (ABS_PATH ${ABS_FIL} PATH)
-      list (FIND _protobuf_include_path ${ABS_PATH} _contains_already)
-      if (${_contains_already} EQUAL -1)
-        list (APPEND _protobuf_include_path -I ${ABS_PATH})
-      endif (${_contains_already} EQUAL -1)
-    endforeach (FIL ${ARGN})
-  else (PROTOBUF_GENERATE_CPP_APPEND_PATH)
-    set (_protobuf_include_path -I ${CMAKE_CURRENT_SOURCE_DIR})
-  endif (PROTOBUF_GENERATE_CPP_APPEND_PATH)
-
-  if (DEFINED PROTOBUF_IMPORT_DIRS)
-    foreach (DIR ${PROTOBUF_IMPORT_DIRS})
-      get_filename_component (ABS_PATH ${DIR} ABSOLUTE)
-      list (FIND _protobuf_include_path ${ABS_PATH} _contains_already)
-      if (${_contains_already} EQUAL -1)
-          list (APPEND _protobuf_include_path -I ${ABS_PATH})
-      endif (${_contains_already} EQUAL -1)
-    endforeach (DIR ${PROTOBUF_IMPORT_DIRS})
-  endif (DEFINED PROTOBUF_IMPORT_DIRS)
-
-  set (${_proto_srcs})
-  foreach (FIL ${ARGN})
-    # Extract the file-path and the extension of the Protobuf specification file
-    get_filename_component (ABS_FIL ${FIL} ABSOLUTE)
-    get_filename_component (FIL_WE ${FIL} NAME_WE)
-
-    # With Python, Protobuf adds "_pb2"
-    set (_proto_gen_src ${FIL_WE}_pb2.py)
-
-    message (STATUS
-      "Adding ${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src} to Python sources")
-
-    list (APPEND ${_proto_srcs} "${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}")
-
-    # Add a specific command for the Protobuf stub/skeleton generation
-    add_custom_command (OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}"
-      COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      --python_out ${CMAKE_CURRENT_BINARY_DIR} ${_protobuf_include_path} ${ABS_FIL}
-      DEPENDS ${ABS_FIL} ${PROTOBUF_PROTOC_EXECUTABLE}
-      COMMENT "Running Python protocol buffer compiler on ${FIL}, generating ${CMAKE_CURRENT_BINARY_DIR}/${_proto_gen_src}"
-      VERBATIM)
-  endforeach (FIL ${ARGN})
-
-  set_source_files_properties (${${_proto_srcs}} PROPERTIES GENERATED TRUE)
-  set (${_proto_srcs} ${${_proto_srcs}} PARENT_SCOPE)
-endfunction (PROTOBUF_GENERATE_PYTHON2)
-
-##
-# Internal function: search for normal library as well as a debug one
-#    if the debug one is specified also include debug/optimized keywords
-#    in *_LIBRARIES variable
-function(_protobuf_find_libraries name filename)
-  find_library(${name}_LIBRARY
-    NAMES ${filename}
-    PATHS ${PROTOBUF_SRC_ROOT_FOLDER}/vsprojects/Release)
-  mark_as_advanced(${name}_LIBRARY)
-
-  find_library(${name}_LIBRARY_DEBUG
-    NAMES ${filename}
-    PATHS ${PROTOBUF_SRC_ROOT_FOLDER}/vsprojects/Debug)
-  mark_as_advanced(${name}_LIBRARY_DEBUG)
-
-  if(NOT ${name}_LIBRARY_DEBUG)
-    # There is no debug library
-    set(${name}_LIBRARY_DEBUG ${${name}_LIBRARY} PARENT_SCOPE)
-    set(${name}_LIBRARIES     ${${name}_LIBRARY} PARENT_SCOPE)
-  else()
-    # There IS a debug library
-    set(${name}_LIBRARIES
-      optimized ${${name}_LIBRARY}
-      debug     ${${name}_LIBRARY_DEBUG}
-      PARENT_SCOPE
-      )
-  endif()
-endfunction()
-
 # ~~~~~~~~~~ Protobuf ~~~~~~~~~
 macro (get_protobuf)
   unset (_required_version)
@@ -862,20 +755,24 @@ macro (get_protobuf)
     message (STATUS "Requires Protobuf without specifying any version")
   endif (${ARGC} GREATER 0)
 
-  set (PROTOBUF_FOUND False)
+  set (Protobuf_FOUND False)
 
+  find_package (absl REQUIRED)
+  list (APPEND PROJ_DEP_LIBS_FOR_LIB absl::log_internal_message)
+  list (APPEND PROJ_DEP_LIBS_FOR_LIB absl::log_internal_check_op)
+  
   find_package (Protobuf ${_required_version} REQUIRED)
-  if (PROTOBUF_LIBRARY)
-    set (PROTOBUF_FOUND True)
-  endif (PROTOBUF_LIBRARY)
+  if (Protobuf_LIBRARY)
+    set (Protobuf_FOUND True)
+  endif (Protobuf_LIBRARY)
 
-  if (PROTOBUF_FOUND)
+  if (Protobuf_FOUND)
     # Update the list of include directories for the project
-    include_directories (${PROTOBUF_INCLUDE_DIR})
+    include_directories (${Protobuf_INCLUDE_DIR})
 
     # Update the list of dependencies for the project
-    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${PROTOBUF_LIBRARIES})
-  endif (PROTOBUF_FOUND)
+    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${Protobuf_LIBRARY})
+  endif (Protobuf_FOUND)
 
 endmacro (get_protobuf)
 
@@ -890,9 +787,6 @@ macro (get_xapian)
   endif (${ARGC} GREATER 0)
 
   # The first check is to get Xapian installation details
-  if (${CMAKE_VERSION} VERSION_LESS 2.8.0)
-	set (Xapian_DIR /usr/${LIBDIR}/cmake/xapian)
-  endif (${CMAKE_VERSION} VERSION_LESS 2.8.0)
   find_package (Xapian)
 
   # The second check is for the required version (FindXapianWrapper.cmake is
@@ -987,6 +881,28 @@ macro (get_sqlite)
 
 endmacro (get_sqlite)
 
+# ~~~~~~~~~~ PostgreSQL ~~~~~~~~~
+macro (get_postgres)
+  unset (_required_version)
+  if (${ARGC} GREATER 0)
+    set (_required_version ${ARGV0})
+    message (STATUS "Requires PostgreSQL-${_required_version}")
+  else (${ARGC} GREATER 0)
+    message (STATUS "Requires PostgreSQL without specifying any version")
+  endif (${ARGC} GREATER 0)
+
+  find_package (PostgreSQL ${_required_version} REQUIRED)
+  if (PostgreSQL_FOUND)
+
+    # Update the list of include directories for the project
+    include_directories (${PostgreSQL_INCLUDE_DIRS})
+
+    # Update the list of dependencies for the project
+    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${PostgreSQL_LIBRARIES})
+  endif (PostgreSQL_FOUND)
+
+endmacro (get_postgres)
+
 # ~~~~~~~~~~ MySQL ~~~~~~~~~
 macro (get_mysql)
   unset (_required_version)
@@ -1051,6 +967,20 @@ macro (get_soci)
     # Update the list of include directories for the project
     include_directories (${SOCI_INCLUDE_DIR})
   endif (SOCI_FOUND)
+
+  # SOCI PostgreSQL
+  find_package (SOCIPostgreSQL ${_required_version} REQUIRED)
+  if (SOCIPostgreSQL_FOUND)
+    #
+    message (STATUS "Found SOCI with PostgreSQL back-end support version:"
+	  " ${SOCI_HUMAN_VERSION}")
+
+    # Update the list of include directories for the project
+    include_directories (${SOCIPostgreSQL_INCLUDE_DIR})
+
+    # Update the list of dependencies for the project
+    list (APPEND PROJ_DEP_LIBS_FOR_LIB ${SOCI_LIBRARIES} ${SOCIPostgreSQL_LIBRARIES})
+  endif (SOCIPostgreSQL_FOUND)
 
   # SOCI MySQL
   find_package (SOCIMySQL ${_required_version} REQUIRED)
@@ -1581,18 +1511,40 @@ endmacro (init_build)
 macro (set_install_directories)
   set (prefix        ${CMAKE_INSTALL_PREFIX})
   set (exec_prefix   ${prefix})
-  set (bindir        ${exec_prefix}/bin)
-  set (libdir        ${exec_prefix}/${LIBDIR})
-  set (pylibdir	     ${libdir}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/py${PACKAGE})
-  set (libexecdir    ${exec_prefix}/libexec)
-  set (sbindir       ${exec_prefix}/sbin)
-  set (sysconfdir    ${prefix}/etc)
-  set (includedir    ${prefix}/include)
-  set (datarootdir   ${prefix}/share)
-  set (datadir       ${datarootdir})
-  set (pkgdatadir    ${datarootdir}/${PACKAGE})
-  set (sampledir     ${STDAIR_SAMPLE_DIR})
-  set (docdir        ${datarootdir}/doc/${PACKAGE}-${PACKAGE_VERSION})
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir BINDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(bindir INSTALL_BIN_DIR BINDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir LIBDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(libdir INSTALL_LIB_DIR LIBDIR)
+  set(pylibdir ${INSTALL_LIB_DIR}/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages/py${PACKAGE})
+  GNUInstallDirs_get_absolute_install_dir(pylibdir pylibdir LIBDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir LIBEXECDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(libexecdir INSTALL_LIBEXEC_DIR LIBEXECDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir SBINDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(sbindir CMAKE_INSTALL_SBINDIR SBINDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir SYSCONFDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(sysconfdir INSTALL_ETC_DIR SYSCONFDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir INCLUDEDIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(includedir INSTALL_INCLUDE_DIR INCLUDEDIR)
+  if(CMAKE_VERSION VERSION_LESS 3.20)
+    set(dir DATADIR)
+  endif()
+  GNUInstallDirs_get_absolute_install_dir(datadir INSTALL_DATA_DIR DATADIR)
+  set (datarootdir   ${datadir})
+  set (pkgdatadir    ${datadir}/${PACKAGE})
+  GNUInstallDirs_get_absolute_install_dir(sampledir STDAIR_SAMPLE_DIR DATADIR)
+  set (docdir        ${datadir}/doc/${PACKAGE}-${PACKAGE_VERSION})
   set (htmldir       ${docdir}/html)
   set (pdfdir        ${htmldir})
   set (mandir        ${datarootdir}/man)
@@ -1622,7 +1574,7 @@ endmacro (module_set_name)
 #  * The corresponding targets (libraries and binaries) are exported within
 #    a CMake import helper file, namely '${PROJECT_NAME}-library-depends.cmake'.
 #    That CMake import helper file is installed in the installation directory,
-#    within the <install_dir>/share/${PROJECT_NAME}/CMake sub-directory.
+#    within the <install_lib_dir>/cmake/${PROJECT_NAME} sub-directory.
 #    That CMake import helper file is used by the ${PROJECT_NAME}-config.cmake
 #    file, to be installed in the same sub-directory. The
 #    ${PROJECT_NAME}-config.cmake file is specified a little bit below.
@@ -1630,7 +1582,7 @@ macro (add_modules)
   set (_embedded_components ${ARGV})
   set (LIB_DEPENDENCY_EXPORT ${PROJECT_NAME}-library-depends)
   set (PY_LIB_DEPENDENCY_EXPORT ${PROJECT_NAME}-python-library-depends)
-  set (LIB_DEPENDENCY_EXPORT_PATH "${INSTALL_DATA_DIR}/${PROJECT_NAME}/CMake")
+  set (LIB_DEPENDENCY_EXPORT_PATH "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME}")
   #
   foreach (_embedded_comp ${_embedded_components})
     #
@@ -1681,10 +1633,10 @@ macro (layer_generate_protobuf _protobuf_dir)
   # file detected
   foreach (_proto_file ${_pb_interface_list})
 	# Build the C++ stubs/skeletons
-	PROTOBUF_GENERATE_CPP (PROTO_CPP_SRCS PROTO_CPP_HDRS ${_proto_file})
+	protobuf_generate_cpp(PROTO_CPP_SRCS PROTO_CPP_HDRS ${_proto_file})
+
 	# Build the Python helper
-	# Deprecated? PROTOBUF_GENERATE_PYTHON (PROTO_PY_SRCS python ${_proto_file})
-	PROTOBUF_GENERATE_PYTHON (PROTO_PY_SRCS ${_proto_file})
+	protobuf_generate_python(PROTO_PY_SRCS ${_proto_file})
 
 	# Specify the source file, which is by convention (here) made of the name
 	# of the Protobuf interface file suffixed by .hpp/.cpp
@@ -1848,8 +1800,8 @@ macro (module_library_add_specific
   endif (NOT "${_lib_short_name}" STREQUAL "${MODULE_NAME}")
 
   # Add the dependencies:
-  #  * on external libraries (Boost, MySQL, SOCI, StdAir), as calculated by 
-  #    the get_external_libs() macro above;
+  #  * on external libraries (Boost, PostgreSQL, MySQL, SOCI, StdAir), as calculated
+  #    by the get_external_libs() macro above;
   #  * on the other module libraries, as provided as paramaters to this macro
   #  * on the main/standard library of the module (when, of course, the
   #    current library is not the main/standard library).
@@ -1995,8 +1947,10 @@ macro (module_header_install_everything_else)
   # It remains to install the header files for all the other layers
   foreach (_layer ${_all_layers})
     # Install header files
+    # See also https://github.com/jrouwe/JoltPhysics/pull/1309
+    cmake_path(SET DST_FILE NORMALIZE "${INSTALL_INCLUDE_DIR}/${MODULE_NAME}/${_layer}")
     install (FILES ${${MODULE_LIB_TARGET}_${_layer}_HEADERS}
-      DESTINATION "${INSTALL_INCLUDE_DIR}/${MODULE_NAME}/${_layer}"
+      DESTINATION ${DST_FILE}
       COMPONENT devel)
   endforeach (_layer ${${MODULE_NAME}_ALL_LAYERS})
 
@@ -2160,11 +2114,11 @@ endmacro (module_script_add)
 # can refer to it (for libraries, header files and binaries)
 macro (module_export_install)
   install (EXPORT ${LIB_DEPENDENCY_EXPORT}
-    DESTINATION "${INSTALL_DATA_DIR}/${PACKAGE}/CMake" COMPONENT devel)
+    DESTINATION "${INSTALL_LIB_DIR}/cmake/${PACKAGE}" COMPONENT devel)
 
   if (NEED_PYTHON)
 	install (EXPORT ${PY_LIB_DEPENDENCY_EXPORT}
-      DESTINATION "${INSTALL_DATA_DIR}/${PACKAGE}/CMake" COMPONENT python-devel)
+      DESTINATION "${INSTALL_LIB_DIR}/cmake/${PACKAGE}" COMPONENT python-devel)
   endif (NEED_PYTHON)
 endmacro (module_export_install)
 
@@ -2628,7 +2582,10 @@ endmacro (gcov_task)
 ###################################################################
 # For other projects to use this component (let us name it myproj),
 # install a few helpers for standard build/packaging systems: CMake,
-# GNU Autotools (M4), pkgconfig/pc, myproj-config
+# GNU Autotools (M4), pkgconfig/pc, myproj-config.
+# Docs:
+# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
+# https://stackoverflow.com/a/75846400/798053
 macro (install_dev_helper_files)
   ##
   ## First, build and install CMake development helper files
@@ -2636,25 +2593,39 @@ macro (install_dev_helper_files)
   # Create a ${PROJECT_NAME}-config.cmake file for the use from 
   # the install tree and install it
   module_export_install()
+  include(CMakePackageConfigHelpers)
   set (${PACKAGE_NAME}_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
   set (${PACKAGE_NAME}_BIN_DIR "${INSTALL_BIN_DIR}")
   set (${PACKAGE_NAME}_LIB_DIR "${INSTALL_LIB_DIR}")
   set (${PACKAGE_NAME}_LIBEXEC_DIR "${INSTALL_LIBEXEC_DIR}")
   set (${PACKAGE_NAME}_PY_LIB_DIR "${INSTALL_PY_LIB_DIR}")
+  set (${PACKAGE_NAME}_SAMPLE_DIR "${INSTALL_SAMPLE_DIR}")
   set (${PACKAGE_NAME}_CMAKE_DIR "${LIB_DEPENDENCY_EXPORT_PATH}")
+  configure_package_config_file(
+      ${PROJECT_NAME}-config.cmake.in
+      ${PROJECT_NAME}-config.cmake
+      INSTALL_DESTINATION ${${PACKAGE_NAME}_CMAKE_DIR}
+      PATH_VARS
+        ${PACKAGE_NAME}_INCLUDE_DIRS
+        ${PACKAGE_NAME}_BIN_DIR
+        ${PACKAGE_NAME}_LIB_DIR
+        ${PACKAGE_NAME}_LIBEXEC_DIR
+        ${PACKAGE_NAME}_SAMPLE_DIR
+  )
+  write_basic_package_version_file(
+      ${PROJECT_NAME}-config-version.cmake
+      VERSION ${PACKAGE_VERSION}
+      COMPATIBILITY AnyNewerVersion
+  )
   # When the project is OpenTREP, OPENTREP_SAMPLE_DIR has
   # already been defined before
-  if (NOT "${PROJECT_NAME}" STREQUAL "opentrep")
+  if (NOT "${PROJECT_NAME}" STREQUAL "opentrep" AND NOT "${PROJECT_NAME}" STREQUAL "stdair")
     set (${PACKAGE_NAME}_SAMPLE_DIR "${INSTALL_SAMPLE_DIR}")
-  endif (NOT "${PROJECT_NAME}" STREQUAL "opentrep")
-  configure_file (${PROJECT_NAME}-config.cmake.in
-	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" @ONLY)
+  endif (NOT "${PROJECT_NAME}" STREQUAL "opentrep" AND NOT "${PROJECT_NAME}" STREQUAL "stdair")
   if (NEED_PYTHON)
 	configure_file (${PROJECT_NAME}-config-python.cmake.in
 	  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-python.cmake" @ONLY)
   endif (NEED_PYTHON)
-  configure_file (${PROJECT_NAME}-config-version.cmake.in
-	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake" @ONLY)
   install (FILES
 	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
 	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
@@ -2788,11 +2759,14 @@ macro (display_protobuf)
   if (PROTOBUF_FOUND)
     message (STATUS)
     message (STATUS "* Protobuf:")
-    message (STATUS "  - PROTOBUF_VERSION .............. : ${PROTOBUF_VERSION}")
-    message (STATUS "  - PROTOBUF_INCLUDE_DIR .......... : ${PROTOBUF_INCLUDE_DIR}")
-    message (STATUS "  - PROTOBUF_LIBRARY .............. : ${PROTOBUF_LIBRARY}")
-    message (STATUS "  - PROTOBUF_PROTOC_EXECUTABLE .... : ${PROTOBUF_PROTOC_EXECUTABLE}")
-    message (STATUS "  - PROTOBUF_PROTOC_LIBRARY ....... : ${PROTOBUF_PROTOC_LIBRARY}")
+    message (STATUS "  - Protobuf_VERSION .............. : ${Protobuf_VERSION}")
+    message (STATUS "  - Protobuf_INCLUDE_DIR .......... : ${Protobuf_INCLUDE_DIR}")
+    message (STATUS "  - Protobuf_INCLUDE_DIRS ......... : ${Protobuf_INCLUDE_DIRS}")
+    message (STATUS "  - Protobuf_LIBRARY .............. : ${Protobuf_LIBRARY}")
+    message (STATUS "  - Protobuf_LIBRARIES ............ : ${Protobuf_LIBRARIES}")
+    message (STATUS "  - Protobuf_PROTOC_EXECUTABLE .... : ${Protobuf_PROTOC_EXECUTABLE}")
+    message (STATUS "  - Protobuf_PROTOC_LIBRARY ....... : ${Protobuf_PROTOC_LIBRARY}")
+    message (STATUS "  - Protobuf_PROTOC_LIBRARIES ..... : ${Protobuf_PROTOC_LIBRARIES}")
   endif (PROTOBUF_FOUND)
 endmacro (display_protobuf)
 
@@ -2813,6 +2787,8 @@ macro (display_readline)
     message (STATUS)
     message (STATUS "* Readline:")
     message (STATUS "  - Readline_VERSION .............. : ${Readline_VERSION}")
+    message (STATUS "  - Readline_VERSION_MAJOR ........ : ${Readline_VERSION_MAJOR}")
+    message (STATUS "  - Readline_VERSION_MINOR ........ : ${Readline_VERSION_MINOR}")
     message (STATUS "  - Readline_INCLUDE_DIR .......... : ${Readline_INCLUDE_DIR}")
     message (STATUS "  - Readline_LIBRARY .............. : ${Readline_LIBRARY}")
   endif (Readline_FOUND)
@@ -2840,6 +2816,17 @@ macro (display_sqlite)
   endif (SQLite3_FOUND)
 endmacro (display_sqlite)
 
+# PostgreSQL
+macro (display_postgres)
+  if (PostgreSQL_FOUND)
+    message (STATUS)
+    message (STATUS "* PostgreSQL:")
+    message (STATUS "  - PostgreSQL_VERSION ............ : ${PostgreSQL_VERSION}")
+    message (STATUS "  - PostgreSQL_INCLUDE_DIRS ....... : ${PostgreSQL_INCLUDE_DIRS}")
+    message (STATUS "  - PostgreSQL_LIBRARIES .......... : ${PostgreSQL_LIBRARIES}")
+  endif (PostgreSQL_FOUND)
+endmacro (display_postgres)
+
 # MySQL
 macro (display_mysql)
   if (MYSQL_FOUND)
@@ -2860,9 +2847,11 @@ macro (display_soci)
     message (STATUS "  - SOCI_LIB_VERSION .............. : ${SOCI_LIB_VERSION}")
     message (STATUS "  - SOCI_HUMAN_VERSION ............ : ${SOCI_HUMAN_VERSION}")
     message (STATUS "  - SOCI_INCLUDE_DIR .............. : ${SOCI_INCLUDE_DIR}")
+    message (STATUS "  - SOCIPostgreSQL_INCLUDE_DIR .... : ${SOCIPostgreSQL_INCLUDE_DIR}")
     message (STATUS "  - SOCIMYSQL_INCLUDE_DIR ......... : ${SOCIMYSQL_INCLUDE_DIR}")
     message (STATUS "  - SOCISQLITE_INCLUDE_DIR ........ : ${SOCISQLITE_INCLUDE_DIR}")
     message (STATUS "  - SOCI_LIBRARIES ................ : ${SOCI_LIBRARIES}")
+    message (STATUS "  - SOCIPostgreSQL_LIBRARIES ...... : ${SOCIPostgreSQL_LIBRARIES}")
     message (STATUS "  - SOCIMYSQL_LIBRARIES ........... : ${SOCIMYSQL_LIBRARIES}")
     message (STATUS "  - SOCISQLITE_LIBRARIES .......... : ${SOCISQLITE_LIBRARIES}")
   endif (SOCI_FOUND)
@@ -3122,6 +3111,7 @@ macro (display_status)
   message (STATUS "-------------------------------------")
   message (STATUS "---       Build Configuration     ---")
   message (STATUS "-------------------------------------")
+  message (STATUS "C++ standard ...................... : C++-${CMAKE_CXX_STANDARD}")
   message (STATUS "Modules to build .................. : ${PROJ_ALL_MOD_FOR_BLD}")
   message (STATUS "Libraries to build/install ........ : ${PROJ_ALL_LIB_TARGETS}")
   message (STATUS "Binaries to build/install ......... : ${PROJ_ALL_BIN_TARGETS}")
@@ -3187,6 +3177,7 @@ macro (display_status)
   display_readline ()
   display_curses ()
   display_sqlite ()
+  display_postgres ()
   display_mysql ()
   display_soci ()
   display_optd ()

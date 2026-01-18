@@ -1,3 +1,7 @@
+* 2026-01-18:
+- Version 1.00.8
+- Synchronized the CMake conf files with StdAir
+
 * 2025-01-27:
 - Version 1.00.7
 - Upgraded CMake support files
